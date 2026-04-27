@@ -1,0 +1,3257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Avorigen Music Studio Edu</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+  <style>
+    :root {
+      --ink: #1f2630;
+      --ink-soft: #56606f;
+      --panel: #fbf8ef;
+      --panel-2: #f2ecd9;
+      --paper: #fffdf8;
+      --gold: #b58840;
+      --gold-soft: #d9b164;
+      --teal: #1f6f78;
+      --green: #2f8f5b;
+      --red: #b54d3f;
+      --line: #d9cfb6;
+      --shadow: 0 16px 40px rgba(26, 30, 38, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(213, 189, 135, 0.18), transparent 28%),
+        linear-gradient(160deg, #efe7d2 0%, #e7ddc7 100%);
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+      overscroll-behavior: none;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: rgba(31, 38, 48, 0.96);
+      color: white;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(8px);
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 220px;
+    }
+
+    .brand-title {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .brand-subtitle {
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    .transport-strip,
+    .doc-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .spacer {
+      flex: 1;
+    }
+
+    .status-pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 0.84rem;
+      white-space: nowrap;
+    }
+
+    .app-shell {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(280px, 320px) minmax(0, 1fr) minmax(280px, 320px);
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .sidebar,
+    .inspector {
+      min-height: 0;
+      overflow: auto;
+      background: rgba(255, 253, 248, 0.94);
+      border: 1px solid rgba(181, 136, 64, 0.18);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .workspace-wrap {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      background: rgba(255, 248, 232, 0.7);
+      border: 1px solid rgba(181, 136, 64, 0.2);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    #workspace {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      border-radius: 18px;
+      padding: 22px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.18)),
+        repeating-linear-gradient(
+          90deg,
+          rgba(213, 197, 164, 0.14) 0,
+          rgba(213, 197, 164, 0.14) 1px,
+          transparent 1px,
+          transparent 36px
+        );
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #sheet {
+      width: max-content;
+      min-width: 960px;
+      margin: 0 auto;
+      background: var(--paper);
+      border-radius: 14px;
+      box-shadow: 0 24px 48px rgba(31, 38, 48, 0.18);
+      padding: 34px 36px 28px;
+      transform-origin: top left;
+      position: relative;
+    }
+
+    .score-head {
+      text-align: center;
+      margin-bottom: 18px;
+      color: #121820;
+    }
+
+    .score-title {
+      margin: 0;
+      font-size: 2rem;
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .score-subtitle {
+      margin: 6px 0 0;
+      font-size: 1rem;
+      color: #596273;
+    }
+
+    .score-meta {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      font-size: 0.92rem;
+      color: #4b5563;
+    }
+
+    #output {
+      position: relative;
+      min-height: 460px;
+      cursor: crosshair;
+      touch-action: pan-x pan-y;
+    }
+
+    .floating-label {
+      position: absolute;
+      display: none;
+      pointer-events: none;
+      z-index: 20;
+      transform: translate(-50%, -115%);
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(18, 24, 32, 0.92);
+      color: #f7e3b1;
+      font-size: 0.78rem;
+      white-space: nowrap;
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.22);
+    }
+
+    #eraser-mark {
+      color: var(--red);
+      font-size: 1.6rem;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.78);
+      padding: 0 6px;
+      border-radius: 999px;
+    }
+
+    .score-footer {
+      border-top: 1px solid var(--line);
+      margin-top: 18px;
+      padding-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: #687182;
+      font-size: 0.84rem;
+    }
+
+    .panel-title {
+      margin: 0 0 14px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+    }
+
+    .panel-section {
+      border: 1px solid rgba(181, 136, 64, 0.16);
+      border-radius: 18px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(250, 244, 230, 0.9));
+    }
+
+    .panel-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .field-grid.single {
+      grid-template-columns: 1fr;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.78rem;
+      color: var(--ink-soft);
+      font-weight: 700;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--ink);
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 72px;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 4px rgba(181, 136, 64, 0.12);
+    }
+
+    .chip-row,
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 13px;
+      padding: 10px 14px;
+      background: #e8ddc4;
+      color: #18202c;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s ease, filter 0.12s ease, background 0.12s ease;
+      min-height: 42px;
+    }
+
+    .btn:hover {
+      filter: brightness(1.03);
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn.primary {
+      background: var(--gold-soft);
+      color: #1d1708;
+    }
+
+    .btn.dark {
+      background: #263243;
+      color: white;
+    }
+
+    .btn.green {
+      background: #2e8d5c;
+      color: white;
+    }
+
+    .btn.red {
+      background: #b64a3d;
+      color: white;
+    }
+
+    .btn.teal {
+      background: var(--teal);
+      color: white;
+    }
+
+    .btn.is-active {
+      background: #18202c;
+      color: #f6e5ba;
+      box-shadow: inset 0 0 0 2px rgba(246, 229, 186, 0.16);
+    }
+
+    .chip {
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: #f0e6cf;
+      border: 1px solid rgba(181, 136, 64, 0.15);
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #273142;
+    }
+
+    .chip.active {
+      background: #1f6f78;
+      color: white;
+      border-color: transparent;
+    }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(181, 136, 64, 0.36), transparent);
+      margin: 2px 0;
+    }
+
+    .mini-note {
+      font-size: 1.12rem;
+      line-height: 1;
+    }
+
+    .dur-glyph {
+      font-size: 1.3rem;
+      font-weight: 700;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.8em;
+    }
+
+    .hint-block {
+      border-radius: 16px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(31, 111, 120, 0.1), rgba(31, 111, 120, 0.04));
+      border: 1px solid rgba(31, 111, 120, 0.14);
+      color: #17333a;
+    }
+
+    .hint-title {
+      margin: 0 0 8px;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #1f6f78;
+      font-weight: 800;
+    }
+
+    .hint-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.92rem;
+    }
+
+    .summary-card {
+      border-radius: 16px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(181, 136, 64, 0.1), rgba(181, 136, 64, 0.03));
+      border: 1px solid rgba(181, 136, 64, 0.16);
+      color: #49381d;
+    }
+
+    .selection-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .selection-actions .btn {
+      width: 100%;
+      padding-inline: 8px;
+    }
+
+    .helper-text {
+      font-size: 0.8rem;
+      line-height: 1.45;
+      color: #6a7280;
+    }
+
+    .meter-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-note {
+      color: #6c7481;
+      font-size: 0.76rem;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 1200px) {
+      .app-shell {
+        grid-template-columns: 300px minmax(0, 1fr);
+      }
+
+      .inspector {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 920px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        overflow: auto;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .app-shell {
+        grid-template-columns: 1fr;
+        padding: 12px;
+      }
+
+      .sidebar,
+      .workspace-wrap,
+      .inspector {
+        min-height: auto;
+      }
+
+      #sheet {
+        min-width: 820px;
+      }
+    }
+
+    @media print {
+      html,
+      body {
+        background: white !important;
+        overflow: visible !important;
+        height: auto !important;
+      }
+
+      .topbar,
+      .sidebar,
+      .inspector {
+        display: none !important;
+      }
+
+      .app-shell {
+        display: block !important;
+        padding: 0 !important;
+      }
+
+      .workspace-wrap {
+        background: white !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+      }
+
+      #workspace {
+        overflow: visible !important;
+        background: white !important;
+        padding: 0 !important;
+      }
+
+      #sheet {
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        padding: 8mm 6mm 8mm 8mm !important;
+        margin: 0 !important;
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        transform: none !important;
+        overflow: visible !important;
+      }
+
+      .score-head {
+        margin-bottom: 8px !important;
+        break-after: auto;
+        page-break-after: auto;
+      }
+
+      #output {
+        cursor: default !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        break-before: auto;
+        page-break-before: auto;
+      }
+
+      #pitch-label,
+      #eraser-mark {
+        display: none !important;
+      }
+
+      svg {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+      }
+
+      @page {
+        size: letter portrait;
+        margin: 6mm;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-title">Avorigen Music Studio Edu</div>
+      <div class="brand-subtitle">Creada por Maxdiel Boniche para uso del ministerio de alabanza</div>
+    </div>
+
+    <div class="doc-strip">
+      <button type="button" id="btn-undo" class="btn primary">Deshacer</button>
+      <button type="button" id="btn-save-file" class="btn">Guardar archivo</button>
+      <button type="button" id="btn-load-file" class="btn">Importar archivo</button>
+      <button type="button" id="btn-print" class="btn">Imprimir</button>
+      <button type="button" id="btn-clear" class="btn red">Limpiar</button>
+      <input type="file" id="file-import-input" accept=".avorigen.json,.json" hidden>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="transport-strip">
+      <input type="number" id="bpm-input" min="40" max="240" value="108" style="width:84px;">
+      <button type="button" id="btn-metronome" class="btn">Metrónomo</button>
+      <button type="button" id="btn-play" class="btn green">Reproducir</button>
+      <button type="button" id="btn-pause" class="btn teal">Pausa</button>
+      <button type="button" id="btn-stop" class="btn red">Detener</button>
+      <div id="status-pill" class="status-pill">Listo para escribir</div>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <aside class="sidebar">
+      <div class="panel-stack">
+        <section class="panel-section">
+          <h2 class="panel-title">Partitura</h2>
+          <div class="field-grid single">
+            <div class="field">
+              <label for="score-title-input">Título</label>
+              <input type="text" id="score-title-input" value="Mi partitura">
+            </div>
+            <div class="field">
+              <label for="score-subtitle-input">Subtítulo</label>
+              <input type="text" id="score-subtitle-input" value="Armonía y escritura musical">
+            </div>
+            <div class="field-grid">
+              <div class="field">
+                <label for="teacher-input">Profesor / Autor</label>
+                <input type="text" id="teacher-input" value="">
+              </div>
+              <div class="field">
+                <label for="course-input">Curso</label>
+                <input type="text" id="course-input" value="">
+              </div>
+            </div>
+            <div class="field-grid">
+              <div class="field">
+                <label for="date-input">Fecha</label>
+                <input type="text" id="date-input" value="">
+              </div>
+              <div class="field">
+                <label for="footer-input">Pie de página</label>
+              <input type="text" id="footer-input" value="Creada por Maxdiel Boniche para uso del ministerio de alabanza">
+              </div>
+            </div>
+            <div class="field-grid">
+              <div class="field">
+                <label for="staff-1-label-input">Etiqueta pentagrama 1</label>
+                <input type="text" id="staff-1-label-input" value="Superior">
+              </div>
+              <div class="field">
+                <label for="staff-2-label-input">Etiqueta pentagrama 2</label>
+                <input type="text" id="staff-2-label-input" value="Inferior">
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2 class="panel-title">Formato</h2>
+          <div class="panel-stack">
+            <div class="field">
+              <label>Modo de pentagrama</label>
+              <div class="chip-row">
+                <button type="button" class="btn is-active" id="btn-single-staff">1 pentagrama</button>
+                <button type="button" class="btn" id="btn-grand-staff">2 pentagramas</button>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="top-clef-select">Clave superior</label>
+                <select id="top-clef-select">
+                  <option value="treble" selected>Sol</option>
+                  <option value="bass">Fa</option>
+                  <option value="alto">Do</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="bottom-clef-select">Clave inferior</label>
+                <select id="bottom-clef-select">
+                  <option value="bass" selected>Fa</option>
+                  <option value="treble">Sol</option>
+                  <option value="alto">Do</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="key-signature-select">Tonalidad</label>
+                <select id="key-signature-select"></select>
+              </div>
+              <div class="field">
+                <label for="start-measure-input">Desde compás</label>
+                <input type="number" id="start-measure-input" min="1" max="100" value="1">
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Compás</label>
+              <div class="meter-row">
+                <input type="number" id="time-num-input" min="1" max="12" value="4">
+                <span>/</span>
+                <select id="time-den-input">
+                  <option value="2">2</option>
+                  <option value="4" selected>4</option>
+                  <option value="8">8</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Pentagrama activo</label>
+              <div class="chip-row">
+                <button type="button" class="btn is-active" id="btn-staff-0">Superior</button>
+                <button type="button" class="btn" id="btn-staff-1">Inferior</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Zoom de hoja</label>
+              <div class="btn-row">
+                <button type="button" class="btn" data-zoom="0.85">85%</button>
+                <button type="button" class="btn is-active" data-zoom="1">100%</button>
+                <button type="button" class="btn" data-zoom="1.15">115%</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Barra final</label>
+              <div class="btn-row">
+                <button type="button" class="btn" id="btn-final-bar">Activar compás final</button>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="repeat-measure-input">Compás para repetición</label>
+                <input type="number" id="repeat-measure-input" min="1" max="100" value="1">
+              </div>
+              <div class="field">
+                <label>Marcas</label>
+                <div class="btn-row">
+                  <button type="button" class="btn" id="btn-repeat-start">|:</button>
+                  <button type="button" class="btn" id="btn-repeat-end">:|</button>
+                  <button type="button" class="btn" id="btn-repeat-clear">Quitar</button>
+                </div>
+              </div>
+            </div>
+            <p id="repeat-summary" class="footer-note">Sin repeticiones marcadas.</p>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2 class="panel-title">Entrada</h2>
+          <div class="panel-stack">
+            <div class="field">
+              <label>Herramienta</label>
+              <div class="btn-row">
+                <button type="button" class="btn is-active tool-btn" data-tool="select">Seleccionar</button>
+                <button type="button" class="btn tool-btn" data-tool="note">Nota</button>
+                <button type="button" class="btn tool-btn" data-tool="chord">Acorde</button>
+                <button type="button" class="btn tool-btn" data-tool="rest">Silencio</button>
+                <button type="button" class="btn tool-btn" data-tool="tie">Unión</button>
+                <button type="button" class="btn tool-btn" data-tool="slur">Fraseo</button>
+                <button type="button" class="btn tool-btn" data-tool="eraser">Borrador</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Figura</label>
+              <div class="btn-row">
+                <button type="button" class="btn dur-btn" data-dur="w" title="Redonda"><span class="dur-glyph">𝅝</span></button>
+                <button type="button" class="btn dur-btn" data-dur="h" title="Blanca"><span class="dur-glyph">𝅗𝅥</span></button>
+                <button type="button" class="btn dur-btn is-active" data-dur="q" title="Negra"><span class="dur-glyph">♩</span></button>
+                <button type="button" class="btn dur-btn" data-dur="8" title="Corchea"><span class="dur-glyph">♪</span></button>
+                <button type="button" class="btn dur-btn" data-dur="16" title="Semicorchea"><span class="dur-glyph">𝅘𝅥</span></button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Alteración al insertar</label>
+              <div class="btn-row">
+                <button type="button" class="btn accidental-btn is-active" data-acc="">Natural</button>
+                <button type="button" class="btn accidental-btn" data-acc="#">#</button>
+                <button type="button" class="btn accidental-btn" data-acc="b">b</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2 class="panel-title">Sonido</h2>
+          <div class="field-grid">
+            <div class="field">
+              <label for="instrument-select">Instrumento</label>
+              <select id="instrument-select">
+                <option value="piano" selected>Piano cálido</option>
+                <option value="guitar">Guitarra nylon</option>
+                <option value="flute">Flauta suave</option>
+                <option value="violin">Violín</option>
+                <option value="organ">Órgano</option>
+                <option value="bass">Bajo</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="volume-input">Volumen</label>
+              <input type="range" id="volume-input" min="-30" max="0" value="-8">
+            </div>
+          </div>
+          <p class="footer-note">El audio usa un solo instrumento para toda la partitura en esta primera versión. La base queda lista para separar sonidos por pentagrama después.</p>
+        </section>
+      </div>
+    </aside>
+
+    <section class="workspace-wrap">
+      <div id="workspace">
+        <article id="sheet">
+          <div class="score-head">
+            <h1 id="render-title" class="score-title">Mi partitura</h1>
+            <p id="render-subtitle" class="score-subtitle">Creada por Maxdiel Boniche para uso del ministerio de alabanza</p>
+            <div id="render-meta" class="score-meta"></div>
+          </div>
+
+          <div id="pitch-label" class="floating-label">--</div>
+          <div id="eraser-mark" class="floating-label">✕</div>
+          <div id="output"></div>
+
+          <footer class="score-footer">
+            <div id="render-footer-left">Creada por Maxdiel Boniche para uso del ministerio de alabanza</div>
+            <div id="render-footer-center">Partitura para clase</div>
+            <div id="render-footer-right">Página 1</div>
+          </footer>
+        </article>
+      </div>
+    </section>
+
+    <aside class="inspector">
+      <div class="panel-stack">
+        <section class="summary-card">
+          <h2 class="panel-title">Resumen</h2>
+          <div id="selection-summary" class="helper-text">Selecciona una nota o escribe nueva música para ver detalles y acciones rápidas.</div>
+        </section>
+
+        <section class="panel-section">
+          <h2 class="panel-title">Edición Rápida</h2>
+          <div class="panel-stack">
+            <div class="selection-actions">
+              <button type="button" class="btn" id="btn-note-up">Subir</button>
+              <button type="button" class="btn" id="btn-note-down">Bajar</button>
+              <button type="button" class="btn" id="btn-delete-selected">Borrar</button>
+            </div>
+            <div class="selection-actions">
+              <button type="button" class="btn" data-set-acc="" id="btn-set-natural">♮</button>
+              <button type="button" class="btn" data-set-acc="#" id="btn-set-sharp">#</button>
+              <button type="button" class="btn" data-set-acc="b" id="btn-set-flat">b</button>
+            </div>
+            <div class="btn-row">
+              <button type="button" class="btn quick-dur-btn" data-dur="w" title="Redonda"><span class="dur-glyph">𝅝</span></button>
+              <button type="button" class="btn quick-dur-btn" data-dur="h" title="Blanca"><span class="dur-glyph">𝅗𝅥</span></button>
+              <button type="button" class="btn quick-dur-btn" data-dur="q" title="Negra"><span class="dur-glyph">♩</span></button>
+              <button type="button" class="btn quick-dur-btn" data-dur="8" title="Corchea"><span class="dur-glyph">♪</span></button>
+              <button type="button" class="btn quick-dur-btn" data-dur="16" title="Semicorchea"><span class="dur-glyph">𝅘𝅥</span></button>
+            </div>
+            <p class="helper-text">Estas acciones editan la nota seleccionada. En acordes, la transposición mueve el acorde completo.</p>
+          </div>
+        </section>
+
+        <section class="hint-block">
+          <h2 class="hint-title">Consejos de Armonía</h2>
+          <div id="harmony-hints" class="hint-list"></div>
+        </section>
+
+        <section class="panel-section">
+          <h2 class="panel-title">Sugerencias Diatónicas</h2>
+          <div id="diatonic-chords" class="helper-text"></div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const {
+      Renderer,
+      Stave,
+      StaveNote,
+      Voice,
+      Formatter,
+      StaveTie,
+      Curve,
+      Accidental,
+      StaveConnector
+    } = Vex.Flow;
+
+    const STORAGE_KEY = 'avorigen_music_studio_edu_v1';
+    const HISTORY_LIMIT = 120;
+    const MEASURE_WIDTH = 360;
+    const MEASURES_PER_LINE = 2;
+    const LEFT_X = 24;
+    const TOP_Y = 100;
+    const SINGLE_SYSTEM_GAP = 190;
+    const GRAND_STAFF_GAP = 92;
+    const GRAND_SYSTEM_GAP = 280;
+
+    const durValues = { w: 4, h: 2, q: 1, 8: 0.5, 16: 0.25 };
+    const durTicks = { w: 64, h: 32, q: 16, 8: 8, 16: 4 };
+    const middleByClef = { treble: 'b/4', bass: 'd/3', alto: 'g/3' };
+    const naturalPitchMaps = {
+      treble: [
+        'g/6', 'f/6', 'e/6', 'd/6', 'c/6', 'b/5', 'a/5', 'g/5', 'f/5', 'e/5', 'd/5', 'c/5',
+        'b/4', 'a/4', 'g/4', 'f/4', 'e/4', 'd/4', 'c/4', 'b/3', 'a/3', 'g/3', 'f/3', 'e/3', 'd/3', 'c/3'
+      ],
+      bass: [
+        'b/4', 'a/4', 'g/4', 'f/4', 'e/4', 'd/4', 'c/4', 'b/3', 'a/3', 'g/3', 'f/3', 'e/3',
+        'd/3', 'c/3', 'b/2', 'a/2', 'g/2', 'f/2', 'e/2', 'd/2', 'c/2', 'b/1', 'a/1', 'g/1', 'f/1', 'e/1'
+      ],
+      alto: [
+        'e/5', 'd/5', 'c/5', 'b/4', 'a/4', 'g/4', 'f/4', 'e/4', 'd/4', 'c/4', 'b/3', 'a/3',
+        'g/3', 'f/3', 'e/3', 'd/3', 'c/3', 'b/2', 'a/2', 'g/2', 'f/2', 'e/2', 'd/2', 'c/2', 'b/1', 'a/1'
+      ]
+    };
+    const keySignatureOptions = [
+      'C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#',
+      'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb',
+      'Am', 'Em', 'Bm', 'F#m', 'C#m', 'G#m', 'D#m', 'A#m',
+      'Dm', 'Gm', 'Cm', 'Fm', 'Bbm', 'Ebm', 'Abm'
+    ];
+
+    const state = {
+      meta: {
+        title: 'Mi partitura',
+        subtitle: 'Creada por Maxdiel Boniche para uso del ministerio de alabanza',
+        teacher: '',
+        course: '',
+        date: '',
+        footer: 'Creada por Maxdiel Boniche para uso del ministerio de alabanza',
+        staffLabels: ['Superior', 'Inferior']
+      },
+      layout: {
+        staffMode: 'single',
+        clefs: ['treble', 'bass'],
+        activeStaff: 0,
+        timeNumerator: 4,
+        timeDenominator: 4,
+        keySignature: 'C',
+        finalBarEnabled: false,
+        sheetZoom: 1
+      },
+      tools: {
+        mode: 'select',
+        duration: 'q',
+        insertAccidental: ''
+      },
+      audio: {
+        bpm: 108,
+        metronomeEnabled: false,
+        instrument: 'piano',
+        volume: -8
+      },
+      music: {
+        measureMeta: {},
+        staves: [
+          { notes: [], slurs: [], manualTies: [] },
+          { notes: [], slurs: [], manualTies: [] }
+        ]
+      },
+      ui: {
+        hovered: null,
+        selected: null,
+        actionStart: null,
+        drawRequested: false,
+        printMode: false,
+        renderRegions: [],
+        noteHits: [[], []],
+        vexMap: [{}, {}],
+        playbackCache: [[], []],
+        scheduledPlaybackDuration: 0,
+        pausedPlayback: false,
+        playbackPrepared: false,
+        playbackStopTimer: null,
+        ghost: null
+      },
+      history: [],
+      historyIndex: -1
+    };
+
+    const div = document.getElementById('output');
+    const renderer = new Renderer(div, Renderer.Backends.SVG);
+    const context = renderer.getContext();
+
+    const statusPill = document.getElementById('status-pill');
+    const pitchLabel = document.getElementById('pitch-label');
+    const eraserMark = document.getElementById('eraser-mark');
+
+    let synth = null;
+    let synthFx = [];
+
+    const masterGain = new Tone.Volume(state.audio.volume).toDestination();
+    const metSynth = new Tone.Synth({
+      oscillator: { type: 'square' },
+      envelope: { attack: 0.001, decay: 0.04, sustain: 0, release: 0.04 }
+    }).connect(masterGain);
+    metSynth.volume.value = -10;
+
+    function setStatus(text) {
+      statusPill.textContent = text;
+    }
+
+    function populateKeySignatureSelect() {
+      const select = document.getElementById('key-signature-select');
+      select.innerHTML = keySignatureOptions
+        .map(key => `<option value="${key}">${key}</option>`)
+        .join('');
+      select.value = state.layout.keySignature;
+    }
+
+    function disposeSynthFx() {
+      synthFx.forEach(node => {
+        try {
+          node.dispose();
+        } catch (err) {}
+      });
+      synthFx = [];
+    }
+
+    function makeInstrument(type) {
+      if (synth) {
+        try {
+          synth.dispose();
+        } catch (err) {}
+      }
+      disposeSynthFx();
+
+      if (type === 'guitar') {
+        synth = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'triangle' },
+          envelope: { attack: 0.005, decay: 0.22, sustain: 0.16, release: 1.2 }
+        });
+        const filter = new Tone.Filter(1300, 'lowpass');
+        synthFx.push(filter);
+        synth.chain(filter, masterGain);
+      } else if (type === 'flute') {
+        synth = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'sine' },
+          envelope: { attack: 0.08, decay: 0.15, sustain: 0.7, release: 0.55 }
+        });
+        const vibrato = new Tone.Vibrato(5, 0.08);
+        synthFx.push(vibrato);
+        synth.chain(vibrato, masterGain);
+      } else if (type === 'violin') {
+        synth = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'sawtooth' },
+          envelope: { attack: 0.12, decay: 0.15, sustain: 0.55, release: 0.85 }
+        });
+        const filter = new Tone.Filter(1800, 'lowpass');
+        const chorus = new Tone.Chorus(4, 2.5, 0.25).start();
+        synthFx.push(filter, chorus);
+        synth.chain(filter, chorus, masterGain);
+      } else if (type === 'organ') {
+        synth = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'fatsine' },
+          envelope: { attack: 0.02, decay: 0.05, sustain: 0.9, release: 0.25 }
+        }).connect(masterGain);
+      } else if (type === 'bass') {
+        synth = new Tone.PolySynth(Tone.MonoSynth, {
+          oscillator: { type: 'square' },
+          filter: { Q: 1, type: 'lowpass', rolloff: -24 },
+          envelope: { attack: 0.01, decay: 0.2, sustain: 0.35, release: 0.45 },
+          filterEnvelope: {
+            attack: 0.01,
+            decay: 0.15,
+            sustain: 0.2,
+            release: 0.2,
+            baseFrequency: 80,
+            octaves: 3
+          }
+        }).connect(masterGain);
+      } else {
+        synth = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'triangle' },
+          envelope: { attack: 0.01, decay: 0.3, sustain: 0.35, release: 0.9 }
+        });
+        const reverb = new Tone.Reverb({ decay: 1.4, wet: 0.18 });
+        synthFx.push(reverb);
+        synth.chain(reverb, masterGain);
+      }
+
+      state.audio.instrument = type;
+      updateVolume();
+    }
+
+    function updateVolume() {
+      const vol = parseInt(document.getElementById('volume-input').value, 10);
+      state.audio.volume = Number.isNaN(vol) ? -8 : vol;
+      masterGain.volume.value = state.audio.volume;
+    }
+
+    function getMeasureTicks() {
+      return state.layout.timeNumerator * (64 / state.layout.timeDenominator);
+    }
+
+    function getMeasuresPerLine() {
+      return state.ui.printMode ? 2 : MEASURES_PER_LINE;
+    }
+
+    function getMeasureWidth() {
+      return state.ui.printMode ? 330 : MEASURE_WIDTH;
+    }
+
+    function getTopOffset() {
+      return state.ui.printMode ? 28 : TOP_Y;
+    }
+
+    function getSingleSystemGap() {
+      return state.ui.printMode ? 150 : SINGLE_SYSTEM_GAP;
+    }
+
+    function getGrandSystemGap() {
+      return state.ui.printMode ? 228 : GRAND_SYSTEM_GAP;
+    }
+
+    function getMeasureBeats() {
+      return state.layout.timeNumerator * (4 / state.layout.timeDenominator);
+    }
+
+    function getDurationBase(dur) {
+      return String(dur || 'q').replace('r', '');
+    }
+
+    function getDurTicks(dur) {
+      return durTicks[getDurationBase(dur)] || durTicks.q;
+    }
+
+    function durationFromTicks(ticks) {
+      if (ticks >= durTicks.w) return 'w';
+      if (ticks >= durTicks.h) return 'h';
+      if (ticks >= durTicks.q) return 'q';
+      if (ticks >= durTicks['8']) return '8';
+      return '16';
+    }
+
+    function splitTicksIntoDurations(ticks) {
+      const parts = [];
+      let remaining = Math.max(0, Math.round(ticks));
+      const values = [
+        { dur: 'w', ticks: durTicks.w },
+        { dur: 'h', ticks: durTicks.h },
+        { dur: 'q', ticks: durTicks.q },
+        { dur: '8', ticks: durTicks['8'] },
+        { dur: '16', ticks: durTicks['16'] }
+      ];
+
+      values.forEach(item => {
+        while (remaining >= item.ticks) {
+          parts.push(item.dur);
+          remaining -= item.ticks;
+        }
+      });
+
+      return parts.length ? parts : ['16'];
+    }
+
+    function getPitchMap(clef) {
+      return naturalPitchMaps[clef] || naturalPitchMaps.treble;
+    }
+
+    function getDefaultKeyForClef(clef) {
+      if (clef === 'bass') return 'd/3';
+      if (clef === 'alto') return 'g/3';
+      return 'b/4';
+    }
+
+    function stripAccidental(key) {
+      return String(key).replace(/^([a-g])[#b]?\/(\d+)$/i, '$1/$2');
+    }
+
+    function extractAccidental(key) {
+      const match = String(key).match(/^([a-g])([#b]?)[/](\d+)$/i);
+      return match ? match[2] : '';
+    }
+
+    function applyAccidentalToKey(baseKey, accidental) {
+      const match = String(baseKey).match(/^([a-g])(?:[#b]?)[/](\d+)$/i);
+      if (!match) return baseKey;
+      return `${match[1]}${accidental || ''}/${match[2]}`;
+    }
+
+    function pitchToMidi(key) {
+      const match = String(key).match(/^([a-g])([#b]?)[/](\d+)$/i);
+      if (!match) return 60;
+      const base = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 }[match[1].toLowerCase()] || 0;
+      const accidental = match[2] === '#' ? 1 : match[2] === 'b' ? -1 : 0;
+      return (parseInt(match[3], 10) + 1) * 12 + base + accidental;
+    }
+
+    function keyToPitchClass(key) {
+      return ((pitchToMidi(key) % 12) + 12) % 12;
+    }
+
+    function sortChordKeys(keys) {
+      return [...keys].sort((a, b) => pitchToMidi(a) - pitchToMidi(b));
+    }
+
+    function getNoteKeys(noteData, clef) {
+      if (!noteData) return [getDefaultKeyForClef(clef)];
+      if (String(noteData.dur || '').includes('r')) return [getDefaultKeyForClef(clef)];
+
+      const rawKeys = Array.isArray(noteData.keys) && noteData.keys.length
+        ? noteData.keys
+        : [noteData.key || getDefaultKeyForClef(clef)];
+
+      return sortChordKeys([...new Set(rawKeys)]);
+    }
+
+    function sameChord(noteA, noteB, clefA, clefB) {
+      return getNoteKeys(noteA, clefA).join('|') === getNoteKeys(noteB, clefB).join('|');
+    }
+
+    function createVexNote(noteData, clef) {
+      const dur = noteData?.dur || 'q';
+      const keys = getNoteKeys(noteData, clef);
+      const vexNote = new StaveNote({
+        keys,
+        duration: dur,
+        clef,
+        auto_stem: true
+      });
+
+      keys.forEach((key, index) => {
+        const accidental = extractAccidental(key);
+        if (accidental) {
+          vexNote.addModifier(new Accidental(accidental), index);
+        }
+      });
+
+      return vexNote;
+    }
+
+    function getStaffData(staffIndex) {
+      return state.music.staves[staffIndex];
+    }
+
+    function createEmptyMusicState() {
+      return {
+        measureMeta: {},
+        staves: [
+          { notes: [], slurs: [], manualTies: [] },
+          { notes: [], slurs: [], manualTies: [] }
+        ]
+      };
+    }
+
+    function getExistingMeasureCount() {
+      const measureTicks = getMeasureTicks();
+      const countForStaff = staffIndex => {
+        const totalTicks = getStaffData(staffIndex).notes.reduce((sum, note) => {
+          return sum + getDurTicks(note.dur);
+        }, 0);
+        return Math.max(1, Math.ceil(totalTicks / measureTicks));
+      };
+
+      return Math.max(
+        countForStaff(0),
+        state.layout.staffMode === 'grand' ? countForStaff(1) : 1
+      );
+    }
+
+    function getMeasureMeta(measureIndex) {
+      return state.music.measureMeta[String(measureIndex)] || { repeatStart: false, repeatEnd: false };
+    }
+
+    function setMeasureMeta(measureIndex, partial) {
+      const key = String(measureIndex);
+      const current = getMeasureMeta(measureIndex);
+      const next = { ...current, ...partial };
+      if (!next.repeatStart && !next.repeatEnd) {
+        delete state.music.measureMeta[key];
+      } else {
+        state.music.measureMeta[key] = next;
+      }
+    }
+
+    function pruneMeasureMetaToCount(measureCount) {
+      Object.keys(state.music.measureMeta).forEach(key => {
+        if (Number(key) >= measureCount) {
+          delete state.music.measureMeta[key];
+        }
+      });
+    }
+
+    function updateRepeatSummary() {
+      const summary = document.getElementById('repeat-summary');
+      const entries = Object.keys(state.music.measureMeta)
+        .map(key => ({ measure: Number(key), ...state.music.measureMeta[key] }))
+        .sort((a, b) => a.measure - b.measure);
+
+      if (!entries.length) {
+        summary.textContent = 'Sin repeticiones marcadas.';
+        return;
+      }
+
+      summary.textContent = entries
+        .map(entry => {
+          const parts = [];
+          if (entry.repeatStart) parts.push('|:');
+          if (entry.repeatEnd) parts.push(':|');
+          return `Compás ${entry.measure + 1} ${parts.join(' ')}`;
+        })
+        .join(' · ');
+    }
+
+    function parseSnapshot(snapshot) {
+      try {
+        return JSON.parse(snapshot);
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function makeSnapshot() {
+      return JSON.stringify({
+        meta: state.meta,
+        layout: state.layout,
+        tools: {
+          duration: state.tools.duration,
+          insertAccidental: state.tools.insertAccidental
+        },
+        audio: {
+          bpm: state.audio.bpm,
+          instrument: state.audio.instrument,
+          volume: state.audio.volume,
+          metronomeEnabled: state.audio.metronomeEnabled
+        },
+        music: state.music
+      });
+    }
+
+    function applySnapshot(snapshot) {
+      const parsed = typeof snapshot === 'string' ? parseSnapshot(snapshot) : snapshot;
+      if (!parsed) return;
+
+      if (parsed.meta) state.meta = parsed.meta;
+      if (parsed.layout) state.layout = { ...state.layout, ...parsed.layout };
+      if (parsed.tools) state.tools = { ...state.tools, ...parsed.tools };
+      if (parsed.audio) state.audio = { ...state.audio, ...parsed.audio };
+      if (parsed.music) {
+        state.music = {
+          measureMeta: parsed.music.measureMeta || {},
+          staves: Array.isArray(parsed.music.staves) && parsed.music.staves.length
+            ? parsed.music.staves
+            : [
+                { notes: [], slurs: [], manualTies: [] },
+                { notes: [], slurs: [], manualTies: [] }
+              ]
+        };
+      }
+
+      state.ui.selected = null;
+      state.ui.actionStart = null;
+      syncControlsFromState();
+    }
+
+    function persistDraft() {
+      try {
+        localStorage.setItem(STORAGE_KEY, makeSnapshot());
+      } catch (err) {}
+    }
+
+    function saveState() {
+      const snapshot = makeSnapshot();
+      if (state.history[state.historyIndex] === snapshot) {
+        persistDraft();
+        return;
+      }
+
+      state.history = state.history.slice(0, state.historyIndex + 1);
+      state.history.push(snapshot);
+
+      if (state.history.length > HISTORY_LIMIT) {
+        state.history.shift();
+      }
+
+      state.historyIndex = state.history.length - 1;
+      updateUndoButton();
+      persistDraft();
+    }
+
+    function updateUndoButton() {
+      const btn = document.getElementById('btn-undo');
+      btn.disabled = state.historyIndex <= 0;
+    }
+
+    function undo() {
+      if (state.historyIndex <= 0) return;
+      state.historyIndex -= 1;
+      applySnapshot(state.history[state.historyIndex]);
+      stop();
+      updateUndoButton();
+      requestDraw();
+      updateHarmonyPanel();
+      setStatus('Se deshizo el último cambio');
+    }
+
+    function restoreDraftIfPresent() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return false;
+        const snapshot = parseSnapshot(raw);
+        if (!snapshot) return false;
+        applySnapshot(snapshot);
+        saveState();
+        setStatus('Se restauró el borrador local');
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    function syncControlsFromState() {
+      document.getElementById('score-title-input').value = state.meta.title;
+      document.getElementById('score-subtitle-input').value = state.meta.subtitle;
+      document.getElementById('teacher-input').value = state.meta.teacher;
+      document.getElementById('course-input').value = state.meta.course;
+      document.getElementById('date-input').value = state.meta.date;
+      document.getElementById('footer-input').value = state.meta.footer;
+      document.getElementById('staff-1-label-input').value = state.meta.staffLabels[0] || '';
+      document.getElementById('staff-2-label-input').value = state.meta.staffLabels[1] || '';
+
+      document.getElementById('top-clef-select').value = state.layout.clefs[0];
+      document.getElementById('bottom-clef-select').value = state.layout.clefs[1];
+      document.getElementById('time-num-input').value = state.layout.timeNumerator;
+      document.getElementById('time-den-input').value = state.layout.timeDenominator;
+      document.getElementById('key-signature-select').value = state.layout.keySignature;
+      document.getElementById('start-measure-input').value = document.getElementById('start-measure-input').value || 1;
+      document.getElementById('bpm-input').value = state.audio.bpm;
+      document.getElementById('instrument-select').value = state.audio.instrument;
+      document.getElementById('volume-input').value = state.audio.volume;
+      document.getElementById('repeat-measure-input').max = getExistingMeasureCount();
+      if ((parseInt(document.getElementById('repeat-measure-input').value, 10) || 1) > getExistingMeasureCount()) {
+        document.getElementById('repeat-measure-input').value = getExistingMeasureCount();
+      }
+
+      document.getElementById('btn-single-staff').classList.toggle('is-active', state.layout.staffMode === 'single');
+      document.getElementById('btn-grand-staff').classList.toggle('is-active', state.layout.staffMode === 'grand');
+      document.getElementById('btn-staff-0').classList.toggle('is-active', state.layout.activeStaff === 0);
+      document.getElementById('btn-staff-1').classList.toggle('is-active', state.layout.activeStaff === 1);
+      document.getElementById('btn-final-bar').classList.toggle('is-active', state.layout.finalBarEnabled);
+      document.getElementById('btn-metronome').classList.toggle('is-active', state.audio.metronomeEnabled);
+
+      document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.classList.toggle('is-active', btn.dataset.tool === state.tools.mode);
+      });
+      document.querySelectorAll('.dur-btn').forEach(btn => {
+        btn.classList.toggle('is-active', btn.dataset.dur === state.tools.duration);
+      });
+      document.querySelectorAll('.accidental-btn').forEach(btn => {
+        btn.classList.toggle('is-active', btn.dataset.acc === state.tools.insertAccidental);
+      });
+      document.querySelectorAll('[data-zoom]').forEach(btn => {
+        btn.classList.toggle('is-active', Number(btn.dataset.zoom) === state.layout.sheetZoom);
+      });
+
+      const bottomDisabled = state.layout.staffMode === 'single';
+      document.getElementById('bottom-clef-select').disabled = bottomDisabled;
+      document.getElementById('btn-staff-1').disabled = state.layout.staffMode === 'single';
+
+      setSheetZoom(state.layout.sheetZoom, false);
+      updateMetaPreview();
+      updateRepeatSummary();
+      Tone.Transport.bpm.value = state.audio.bpm;
+      makeInstrument(state.audio.instrument);
+    }
+
+    function updateMetaPreview() {
+      document.getElementById('render-title').textContent = state.meta.title || 'Sin título';
+      document.getElementById('render-subtitle').textContent = state.meta.subtitle || '';
+
+      const metaParts = [];
+      if (state.meta.teacher) metaParts.push(`Profesor/Autor: ${state.meta.teacher}`);
+      if (state.meta.course) metaParts.push(`Curso: ${state.meta.course}`);
+      if (state.meta.date) metaParts.push(`Fecha: ${state.meta.date}`);
+      document.getElementById('render-meta').innerHTML = metaParts.map(item => `<span>${item}</span>`).join('');
+
+      document.getElementById('render-footer-left').textContent = state.meta.footer || '';
+      document.getElementById('render-footer-center').textContent = state.layout.staffMode === 'grand'
+        ? 'Gran pentagrama'
+        : 'Pentagrama individual';
+      document.getElementById('render-footer-right').textContent = `Compás ${state.layout.timeNumerator}/${state.layout.timeDenominator}`;
+    }
+
+    function updateStateFromMetaInputs(commitHistory = false) {
+      state.meta.title = document.getElementById('score-title-input').value.trim();
+      state.meta.subtitle = document.getElementById('score-subtitle-input').value.trim();
+      state.meta.teacher = document.getElementById('teacher-input').value.trim();
+      state.meta.course = document.getElementById('course-input').value.trim();
+      state.meta.date = document.getElementById('date-input').value.trim();
+      state.meta.footer = document.getElementById('footer-input').value.trim();
+      state.meta.staffLabels = [
+        document.getElementById('staff-1-label-input').value.trim() || 'Superior',
+        document.getElementById('staff-2-label-input').value.trim() || 'Inferior'
+      ];
+      updateMetaPreview();
+      if (commitHistory) saveState();
+      else persistDraft();
+      requestDraw();
+    }
+
+    function normalizeRelationsAfterInsert(staffIndex, idx) {
+      const staff = getStaffData(staffIndex);
+      staff.slurs.forEach(rel => {
+        if (rel.start >= idx) rel.start += 1;
+        if (rel.end >= idx) rel.end += 1;
+      });
+      staff.manualTies.forEach(rel => {
+        if (rel.start >= idx) rel.start += 1;
+        if (rel.end >= idx) rel.end += 1;
+      });
+    }
+
+    function normalizeRelationsAfterDelete(staffIndex, idx) {
+      const staff = getStaffData(staffIndex);
+      staff.slurs = staff.slurs
+        .filter(rel => rel.start !== idx && rel.end !== idx)
+        .map(rel => ({
+          start: rel.start > idx ? rel.start - 1 : rel.start,
+          end: rel.end > idx ? rel.end - 1 : rel.end
+        }));
+
+      staff.manualTies = staff.manualTies
+        .filter(rel => rel.start !== idx && rel.end !== idx)
+        .map(rel => ({
+          start: rel.start > idx ? rel.start - 1 : rel.start,
+          end: rel.end > idx ? rel.end - 1 : rel.end
+        }));
+    }
+
+    function buildProcessedForStaff(staffIndex, includeGhost = false) {
+      const staff = getStaffData(staffIndex);
+      const clef = state.layout.clefs[staffIndex];
+      const processed = [];
+      const measureTicks = getMeasureTicks();
+      let tempTicks = 0;
+
+      staff.notes.forEach((note, originalIdx) => {
+        const baseDur = getDurationBase(note.dur);
+        let remainingTicks = getDurTicks(baseDur);
+        const isRest = String(note.dur || '').includes('r');
+        const pieces = [];
+
+        while (remainingTicks > 0) {
+          let availableTicks = measureTicks - tempTicks;
+          if (availableTicks <= 0) {
+            tempTicks = 0;
+            availableTicks = measureTicks;
+          }
+
+          const chunkTicks = Math.min(remainingTicks, availableTicks);
+          const chunkDurations = splitTicksIntoDurations(chunkTicks);
+
+          chunkDurations.forEach(dur => {
+            pieces.push({
+              ...note,
+              dur: dur + (isRest ? 'r' : ''),
+              originalIdx,
+              staffIndex
+            });
+          });
+
+          tempTicks += chunkTicks;
+          remainingTicks -= chunkTicks;
+
+          if (tempTicks === measureTicks) tempTicks = 0;
+        }
+
+        if (!isRest && pieces.length > 1) {
+          pieces.forEach((piece, pieceIndex) => {
+            piece.tieStart = pieceIndex < pieces.length - 1;
+            piece.tieEnd = pieceIndex > 0;
+          });
+        }
+
+        processed.push(...pieces);
+      });
+
+      state.ui.playbackCache[staffIndex] = JSON.parse(JSON.stringify(processed));
+
+      if (
+        includeGhost &&
+        !state.ui.printMode &&
+        state.tools.mode !== 'select' &&
+        !['tie', 'slur', 'eraser'].includes(state.tools.mode) &&
+        state.ui.ghost &&
+        state.ui.ghost.staffIndex === staffIndex
+      ) {
+        const ghost = {
+          key: state.ui.ghost.key,
+          keys: state.tools.mode === 'rest' ? undefined : [state.ui.ghost.key],
+          dur: state.tools.mode === 'rest' ? `${state.tools.duration}r` : state.tools.duration,
+          isGhost: true,
+          staffIndex,
+          originalIdx: undefined
+        };
+        const safeIndex = Math.max(0, Math.min(state.ui.ghost.insertIndex, staff.notes.length));
+
+        if (safeIndex >= staff.notes.length) {
+          processed.push(ghost);
+        } else {
+          let visualInsertAt = processed.findIndex(note => note.originalIdx === safeIndex);
+          if (visualInsertAt < 0) visualInsertAt = processed.length;
+          processed.splice(visualInsertAt, 0, ghost);
+        }
+      }
+
+      return processed;
+    }
+
+    function processedToMeasures(processed) {
+      const measures = [];
+      let currentMeasure = [];
+      let ticks = 0;
+      const measureTicks = getMeasureTicks();
+
+      processed.forEach(note => {
+        const noteTicks = getDurTicks(note.dur);
+        if (ticks + noteTicks > measureTicks) {
+          measures.push(currentMeasure);
+          currentMeasure = [];
+          ticks = 0;
+        }
+
+        currentMeasure.push(note);
+        ticks += noteTicks;
+
+        if (ticks === measureTicks) {
+          measures.push(currentMeasure);
+          currentMeasure = [];
+          ticks = 0;
+        }
+      });
+
+      if (currentMeasure.length || processed.length === 0) {
+        measures.push(currentMeasure);
+      }
+
+      return measures;
+    }
+
+    function fillMeasureWithRests(measureNotes, clef) {
+      const filled = [...measureNotes];
+      let measureTicks = filled.reduce((sum, note) => sum + getDurTicks(note.dur), 0);
+      const targetTicks = getMeasureTicks();
+
+      while (measureTicks < targetTicks) {
+        const diff = targetTicks - measureTicks;
+        const restDur = durationFromTicks(diff);
+        filled.push({
+          key: getDefaultKeyForClef(clef),
+          dur: `${restDur}r`,
+          isAuto: true
+        });
+        measureTicks += getDurTicks(restDur);
+      }
+
+      return filled;
+    }
+
+    function getBeamGroupTicks() {
+      if (
+        state.layout.timeDenominator === 8 &&
+        state.layout.timeNumerator % 3 === 0 &&
+        state.layout.timeNumerator > 3
+      ) {
+        return durTicks['8'] * 3;
+      }
+      return 64 / state.layout.timeDenominator;
+    }
+
+    function getBeamGroupsByBeat(vexNotes, measureNotes) {
+      const groupTicks = getBeamGroupTicks();
+      const groups = [];
+      let currentGroup = [];
+      let ticksInGroup = 0;
+
+      const flushGroup = () => {
+        if (currentGroup.length >= 2) groups.push(currentGroup);
+        currentGroup = [];
+      };
+
+      measureNotes.forEach((note, index) => {
+        const vexNote = vexNotes[index];
+        const duration = getDurationBase(note.dur);
+        const noteTicks = getDurTicks(note.dur);
+        const isRest = String(note.dur || '').includes('r');
+        const isBeamable = vexNote && !isRest && (duration === '8' || duration === '16');
+
+        if (ticksInGroup >= groupTicks) {
+          flushGroup();
+          ticksInGroup = 0;
+        }
+
+        if (ticksInGroup > 0 && ticksInGroup + noteTicks > groupTicks) {
+          flushGroup();
+          ticksInGroup = 0;
+        }
+
+        if (!isBeamable) {
+          flushGroup();
+          ticksInGroup = (ticksInGroup + noteTicks) % groupTicks;
+          return;
+        }
+
+        currentGroup.push(vexNote);
+        ticksInGroup += noteTicks;
+
+        if (ticksInGroup >= groupTicks) {
+          flushGroup();
+          ticksInGroup = 0;
+        }
+      });
+
+      flushGroup();
+      return groups;
+    }
+
+    function getAverageMidiForNoteData(noteData, clef) {
+      const keys = getNoteKeys(noteData, clef);
+      if (!keys.length) return 60;
+      return keys.reduce((sum, key) => sum + pitchToMidi(key), 0) / keys.length;
+    }
+
+    function getStemDirectionForBeamGroup(measureNotes, vexGroup, vexNotes, clef) {
+      const groupIndexes = vexGroup
+        .map(vexNote => vexNotes.indexOf(vexNote))
+        .filter(index => index >= 0);
+
+      const avgMidi = groupIndexes.length
+        ? groupIndexes.reduce((sum, index) => sum + getAverageMidiForNoteData(measureNotes[index], clef), 0) / groupIndexes.length
+        : 60;
+
+      const middle = pitchToMidi(middleByClef[clef] || middleByClef.treble);
+      return avgMidi >= middle ? Vex.Flow.Stem.DOWN : Vex.Flow.Stem.UP;
+    }
+
+    function applyStemDirectionsToBeamGroups(vexNotes, measureNotes, clef) {
+      const groups = getBeamGroupsByBeat(vexNotes, measureNotes);
+      groups.forEach(group => {
+        const direction = getStemDirectionForBeamGroup(measureNotes, group, vexNotes, clef);
+        group.forEach(note => {
+          try {
+            note.setStemDirection(direction);
+          } catch (err) {}
+        });
+      });
+      return groups;
+    }
+
+    function createBeamsByBeat(vexNotes, measureNotes, clef, preparedGroups = null) {
+      const groups = preparedGroups || applyStemDirectionsToBeamGroups(vexNotes, measureNotes, clef);
+      const beams = [];
+      groups.forEach(group => {
+        try {
+          beams.push(new Vex.Flow.Beam(group));
+        } catch (err) {}
+      });
+      return beams;
+    }
+
+    function updateCanvasSize(measureCount) {
+      const measuresPerLine = getMeasuresPerLine();
+      const measureWidth = getMeasureWidth();
+      const singleGap = getSingleSystemGap();
+      const grandGap = getGrandSystemGap();
+      const systemCount = Math.max(1, Math.ceil(measureCount / measuresPerLine));
+      const topOffset = getTopOffset();
+      const width = LEFT_X + (measuresPerLine * measureWidth) + 60;
+      const height = state.layout.staffMode === 'grand'
+        ? topOffset + (systemCount * grandGap) + (state.ui.printMode ? 82 : 140)
+        : topOffset + (systemCount * singleGap) + (state.ui.printMode ? 82 : 140);
+
+      renderer.resize(width, height);
+      div.style.width = `${width}px`;
+      div.style.height = `${height}px`;
+    }
+
+    function requestDraw() {
+      if (state.ui.drawRequested) return;
+      state.ui.drawRequested = true;
+      requestAnimationFrame(() => {
+        state.ui.drawRequested = false;
+        draw();
+      });
+    }
+
+    function drawStaffLabel(text, x, y) {
+      if (!text) return;
+      context.save();
+      context.setFillStyle('#2f3b49');
+      context.setFont('Arial', 12, 'bold');
+      context.fillText(text, x + 8, y - 8);
+      context.restore();
+    }
+
+    function buildConnector(topStave, bottomStave, type) {
+      try {
+        new StaveConnector({
+          top_stave: topStave,
+          bottom_stave: bottomStave,
+          type
+        }).setContext(context).draw();
+      } catch (err) {}
+    }
+
+    function applyMeasureBarlinesToStave(stave, measureIndex, isLastContentMeasure) {
+      const meta = getMeasureMeta(measureIndex);
+      if (meta.repeatStart) {
+        try {
+          stave.setBegBarType(Vex.Flow.Barline.type.REPEAT_BEGIN);
+        } catch (err) {}
+      }
+      if (meta.repeatEnd) {
+        try {
+          stave.setEndBarType(Vex.Flow.Barline.type.REPEAT_END);
+        } catch (err) {}
+        return;
+      }
+      if (state.layout.finalBarEnabled && isLastContentMeasure) {
+        stave.setEndBarType(Vex.Flow.Barline.type.END);
+      }
+    }
+
+    function draw() {
+      context.clear();
+      state.ui.renderRegions = [];
+      state.ui.noteHits = [[], []];
+      state.ui.vexMap = [{}, {}];
+
+      const processedByStaff = [
+        buildProcessedForStaff(0, true),
+        buildProcessedForStaff(1, state.layout.staffMode === 'grand')
+      ];
+
+      const measuresByStaff = processedByStaff.map(processedToMeasures);
+      const measureCount = Math.max(
+        measuresByStaff[0].length,
+        state.layout.staffMode === 'grand' ? measuresByStaff[1].length : 0,
+        1
+      );
+
+      pruneMeasureMetaToCount(measureCount);
+      updateCanvasSize(measureCount);
+      document.getElementById('repeat-measure-input').max = measureCount;
+      updateRepeatSummary();
+      const measuresPerLine = getMeasuresPerLine();
+      const measureWidth = getMeasureWidth();
+      const topOffset = getTopOffset();
+      const singleGap = getSingleSystemGap();
+      const grandGap = getGrandSystemGap();
+
+      for (let measureIndex = 0; measureIndex < measureCount; measureIndex += 1) {
+        const systemIndex = Math.floor(measureIndex / measuresPerLine);
+        const positionInLine = measureIndex % measuresPerLine;
+        const measureX = LEFT_X + positionInLine * measureWidth;
+        const topY = topOffset + (state.layout.staffMode === 'grand' ? systemIndex * grandGap : systemIndex * singleGap);
+        const bottomY = topY + GRAND_STAFF_GAP;
+        const isFirstInLine = positionInLine === 0;
+        const isLastContentMeasure = measureIndex === measureCount - 1;
+
+        const topMeasureNotes = fillMeasureWithRests(measuresByStaff[0][measureIndex] || [], state.layout.clefs[0]);
+        const topStave = new Stave(measureX, topY, measureWidth);
+        if (isFirstInLine) {
+          topStave.addClef(state.layout.clefs[0]);
+          topStave.addTimeSignature(`${state.layout.timeNumerator}/${state.layout.timeDenominator}`);
+          if (state.layout.keySignature) {
+            topStave.addKeySignature(state.layout.keySignature);
+          }
+          drawStaffLabel(state.meta.staffLabels[0], measureX, topY);
+        }
+        applyMeasureBarlinesToStave(topStave, measureIndex, isLastContentMeasure);
+        topStave.setContext(context).draw();
+
+        renderVoiceForStaff(0, topMeasureNotes, topStave, measureX, topY, measureIndex, isFirstInLine, measureWidth);
+
+        if (state.layout.staffMode === 'grand') {
+          const bottomMeasureNotes = fillMeasureWithRests(measuresByStaff[1][measureIndex] || [], state.layout.clefs[1]);
+          const bottomStave = new Stave(measureX, bottomY, measureWidth);
+          if (isFirstInLine) {
+            bottomStave.addClef(state.layout.clefs[1]);
+            bottomStave.addTimeSignature(`${state.layout.timeNumerator}/${state.layout.timeDenominator}`);
+            if (state.layout.keySignature) {
+              bottomStave.addKeySignature(state.layout.keySignature);
+            }
+            drawStaffLabel(state.meta.staffLabels[1], measureX, bottomY);
+          }
+          applyMeasureBarlinesToStave(bottomStave, measureIndex, isLastContentMeasure);
+          bottomStave.setContext(context).draw();
+
+          renderVoiceForStaff(1, bottomMeasureNotes, bottomStave, measureX, bottomY, measureIndex, isFirstInLine, measureWidth);
+          if (isFirstInLine) {
+            buildConnector(topStave, bottomStave, StaveConnector.type.SINGLE_LEFT);
+            buildConnector(topStave, bottomStave, StaveConnector.type.BRACE);
+          }
+        }
+      }
+
+      drawRelationsForStaff(0);
+      if (state.layout.staffMode === 'grand') drawRelationsForStaff(1);
+      updateSelectionSummary();
+    }
+
+    function renderVoiceForStaff(staffIndex, measureNotes, stave, measureX, staveY, measureIndex, isFirstInLine, measureWidth) {
+      const clef = state.layout.clefs[staffIndex];
+      const vexNotes = [];
+      const vexMap = state.ui.vexMap[staffIndex];
+
+      measureNotes.forEach(note => {
+        let vexNote;
+        try {
+          vexNote = createVexNote(note, clef);
+        } catch (err) {
+          vexNote = createVexNote({ dur: 'qr' }, clef);
+        }
+
+        if (note.isGhost) {
+          vexNote.setStyle({ fillStyle: '#b5884099', strokeStyle: '#b5884099' });
+        }
+        if (note.isAuto) {
+          vexNote.setStyle({ fillStyle: '#b7b7b7', strokeStyle: '#b7b7b7' });
+        }
+        if (
+          state.ui.selected &&
+          state.ui.selected.staffIndex === staffIndex &&
+          state.ui.selected.noteIndex === note.originalIdx
+        ) {
+          vexNote.setStyle({ fillStyle: '#1f6f78', strokeStyle: '#1f6f78' });
+        }
+
+        vexNotes.push(vexNote);
+
+        if (note.originalIdx !== undefined) {
+          if (!vexMap[note.originalIdx]) vexMap[note.originalIdx] = [];
+          vexMap[note.originalIdx].push(vexNote);
+        }
+      });
+
+      const voice = new Voice({
+        num_beats: state.layout.timeNumerator,
+        beat_value: state.layout.timeDenominator
+      }).setStrict(true);
+      voice.addTickables(vexNotes);
+
+      const beamGroups = applyStemDirectionsToBeamGroups(vexNotes, measureNotes, clef);
+      const beams = createBeamsByBeat(vexNotes, measureNotes, clef, beamGroups);
+
+      try {
+        new Formatter().joinVoices([voice]).format([voice], measureWidth - (isFirstInLine ? 105 : 46));
+        voice.draw(context, stave);
+        beams.forEach(beam => {
+          beam.setContext(context).draw();
+        });
+      } catch (err) {
+        console.error('Error al dibujar el pentagrama', err);
+      }
+
+      const pitchMap = getPitchMap(clef);
+      measureNotes.forEach((note, noteIndex) => {
+        if (note.originalIdx === undefined || note.isGhost || note.isAuto) return;
+
+        const vexNote = vexNotes[noteIndex];
+        const visibleKeys = getNoteKeys(note, clef);
+        const pitchIndexes = visibleKeys
+          .map(key => pitchMap.indexOf(stripAccidental(key)))
+          .filter(index => index >= 0);
+
+        const avgIndex = pitchIndexes.length
+          ? pitchIndexes.reduce((sum, index) => sum + index, 0) / pitchIndexes.length
+          : pitchMap.indexOf(stripAccidental(note.key || getDefaultKeyForClef(clef)));
+
+        const hit = {
+          originalIdx: note.originalIdx,
+          staffIndex,
+          x: vexNote.getAbsoluteX ? vexNote.getAbsoluteX() : measureX + 50 + noteIndex * 34,
+          y: staveY + 32 + (avgIndex - 8) * 5,
+          measureIndex,
+          keys: visibleKeys
+        };
+
+        state.ui.noteHits[staffIndex].push(hit);
+      });
+
+      state.ui.renderRegions.push({
+        staffIndex,
+        measureIndex,
+        x: measureX,
+        y: staveY - 14,
+        width: measureWidth,
+        height: 96
+      });
+    }
+
+    function drawRelationsForStaff(staffIndex) {
+      const staff = getStaffData(staffIndex);
+      const vexMap = state.ui.vexMap[staffIndex];
+      const clef = state.layout.clefs[staffIndex];
+
+      Object.keys(vexMap).forEach(originalIdx => {
+        const original = staff.notes[originalIdx];
+        if (!original || String(original.dur || '').includes('r')) return;
+        const pieces = vexMap[originalIdx];
+        for (let index = 0; index < pieces.length - 1; index += 1) {
+          try {
+            new StaveTie({
+              from: pieces[index],
+              to: pieces[index + 1],
+              first_indices: pieces[index].getKeys().map((_, keyIndex) => keyIndex),
+              last_indices: pieces[index + 1].getKeys().map((_, keyIndex) => keyIndex)
+            }).setContext(context).draw();
+          } catch (err) {}
+        }
+      });
+
+      staff.manualTies.forEach(tie => {
+        const startPieces = vexMap[tie.start];
+        const endPieces = vexMap[tie.end];
+        if (!startPieces?.length || !endPieces?.length) return;
+
+        const first = startPieces[startPieces.length - 1];
+        const last = endPieces[0];
+        try {
+          new StaveTie({
+            from: first,
+            to: last,
+            first_indices: first.getKeys().map((_, index) => index),
+            last_indices: last.getKeys().map((_, index) => index)
+          }).setContext(context).draw();
+        } catch (err) {}
+      });
+
+      staff.slurs.forEach(slur => {
+        const startPieces = vexMap[slur.start];
+        const endPieces = vexMap[slur.end];
+        if (!startPieces?.length || !endPieces?.length) return;
+
+        try {
+          new Curve(startPieces[0], endPieces[endPieces.length - 1], {
+            thickness: 2,
+            cps: [{ x: 0, y: 22 }, { x: 0, y: 22 }]
+          }).setContext(context).draw();
+        } catch (err) {}
+      });
+    }
+
+    function getLocalPointer(event) {
+      const rect = div.getBoundingClientRect();
+      const zoom = state.layout.sheetZoom || 1;
+      return {
+        x: (event.clientX - rect.left) / zoom,
+        y: (event.clientY - rect.top) / zoom
+      };
+    }
+
+    function findClosestRegion(x, y) {
+      let best = null;
+      let bestScore = Infinity;
+
+      state.ui.renderRegions.forEach(region => {
+        const withinX = x >= region.x && x <= region.x + region.width;
+        const clampedX = withinX ? x : x < region.x ? region.x : region.x + region.width;
+        const clampedY = y < region.y ? region.y : y > region.y + region.height ? region.y + region.height : y;
+        const dx = Math.abs(clampedX - x);
+        const dy = Math.abs(clampedY - y);
+        const score = dx + dy * 1.2;
+        if (score < bestScore) {
+          bestScore = score;
+          best = region;
+        }
+      });
+
+      return best;
+    }
+
+    function getPitchFromY(y, staffIndex, region) {
+      const clef = state.layout.clefs[staffIndex];
+      const pitchMap = getPitchMap(clef);
+      const relativeY = y - (region.y + 14);
+      let index = Math.round((relativeY - 32) / 5) + 8;
+      index = Math.max(0, Math.min(index, pitchMap.length - 1));
+      return applyAccidentalToKey(pitchMap[index], state.tools.insertAccidental);
+    }
+
+    function findClosestNoteHit(x, y, staffIndex = null) {
+      let hits = staffIndex === null
+        ? [...state.ui.noteHits[0], ...state.ui.noteHits[1]]
+        : state.ui.noteHits[staffIndex];
+
+      let best = null;
+      let bestScore = Infinity;
+
+      hits.forEach(hit => {
+        const dx = Math.abs(hit.x - x);
+        const dy = Math.abs(hit.y - y);
+        const score = dx + dy * 0.55;
+        if (dx < 84 && dy < 92 && score < bestScore) {
+          bestScore = score;
+          best = hit;
+        }
+      });
+
+      return best;
+    }
+
+    function computeHoverData(x, y) {
+      const region = findClosestRegion(x, y);
+      if (!region) return null;
+
+      const staffIndex = state.layout.staffMode === 'single' ? 0 : region.staffIndex;
+      const clef = state.layout.clefs[staffIndex];
+      const pitch = getPitchFromY(y, staffIndex, region);
+      const closestHit = findClosestNoteHit(x, y, staffIndex);
+      const staffNotes = getStaffData(staffIndex).notes;
+
+      let insertIndex = staffNotes.length;
+      let insertSide = 'final';
+
+      if (closestHit) {
+        if (x < closestHit.x) {
+          insertIndex = closestHit.originalIdx;
+          insertSide = 'antes';
+        } else {
+          insertIndex = closestHit.originalIdx + 1;
+          insertSide = 'después';
+        }
+      }
+
+      return {
+        staffIndex,
+        clef,
+        region,
+        pitch,
+        closestHit,
+        insertIndex,
+        insertSide
+      };
+    }
+
+    function updateHoverUI(hover, point) {
+      state.ui.hovered = hover;
+      state.ui.ghost = hover
+        ? { staffIndex: hover.staffIndex, insertIndex: hover.insertIndex, key: hover.pitch }
+        : null;
+
+      if (!hover) {
+        hideFloatingHelpers();
+        return;
+      }
+
+      state.layout.activeStaff = hover.staffIndex;
+      document.getElementById('btn-staff-0').classList.toggle('is-active', state.layout.activeStaff === 0);
+      document.getElementById('btn-staff-1').classList.toggle('is-active', state.layout.activeStaff === 1);
+
+      if (state.tools.mode === 'eraser') {
+        pitchLabel.style.display = 'none';
+        if (hover.closestHit) {
+          eraserMark.style.display = 'block';
+          eraserMark.style.left = `${hover.closestHit.x}px`;
+          eraserMark.style.top = `${hover.closestHit.y}px`;
+        } else {
+          eraserMark.style.display = 'none';
+        }
+      } else {
+        eraserMark.style.display = 'none';
+        pitchLabel.style.display = 'block';
+        const staffName = state.layout.staffMode === 'grand'
+          ? (hover.staffIndex === 0 ? 'Superior' : 'Inferior')
+          : 'Pentagrama';
+
+        if (state.tools.mode === 'select') {
+          pitchLabel.textContent = hover.closestHit
+            ? `${staffName} · seleccionar`
+            : `${staffName} · sin nota`;
+        } else if (state.tools.mode === 'chord') {
+          pitchLabel.textContent = `${formatKeyHuman(hover.pitch)} · ${staffName} · sumar acorde`;
+        } else if (['tie', 'slur'].includes(state.tools.mode)) {
+          pitchLabel.textContent = state.ui.actionStart
+            ? 'Selecciona el final'
+            : `Selecciona el inicio en ${staffName.toLowerCase()}`;
+        } else {
+          pitchLabel.textContent = `${formatKeyHuman(hover.pitch)} · ${staffName} · ${hover.insertSide}`;
+        }
+
+        pitchLabel.style.left = `${point.x + 18}px`;
+        pitchLabel.style.top = `${point.y - 10}px`;
+      }
+
+      requestDraw();
+    }
+
+    function hideFloatingHelpers() {
+      pitchLabel.style.display = 'none';
+      eraserMark.style.display = 'none';
+      state.ui.hovered = null;
+      state.ui.ghost = null;
+      requestDraw();
+    }
+
+    function createNewEntryFromHover(hover) {
+      return {
+        key: hover.pitch,
+        keys: [hover.pitch],
+        dur: state.tools.duration
+      };
+    }
+
+    async function previewPitchOrChord(value) {
+      try {
+        await Tone.start();
+      } catch (err) {}
+
+      try {
+        if (Array.isArray(value)) {
+          synth.triggerAttackRelease(value.map(key => key.replace('/', '').toUpperCase()), '8n');
+        } else {
+          synth.triggerAttackRelease(value.replace('/', '').toUpperCase(), '8n');
+        }
+      } catch (err) {}
+    }
+
+    function selectNote(staffIndex, noteIndex) {
+      const note = getStaffData(staffIndex).notes[noteIndex];
+      if (!note) {
+        state.ui.selected = null;
+      } else {
+        state.ui.selected = { staffIndex, noteIndex };
+        state.layout.activeStaff = staffIndex;
+      }
+      updateSelectionSummary();
+      updateHarmonyPanel();
+      requestDraw();
+    }
+
+    function clearSelection() {
+      state.ui.selected = null;
+      updateSelectionSummary();
+      updateHarmonyPanel();
+    }
+
+    async function handlePointerDown(event) {
+      event.preventDefault();
+      const point = getLocalPointer(event);
+      const hover = computeHoverData(point.x, point.y);
+      if (!hover) return;
+
+      state.layout.activeStaff = hover.staffIndex;
+      const staff = getStaffData(hover.staffIndex);
+
+      try {
+        await Tone.start();
+      } catch (err) {}
+
+      if (state.tools.mode === 'select') {
+        if (hover.closestHit) {
+          selectNote(hover.closestHit.staffIndex, hover.closestHit.originalIdx);
+          setStatus('Nota seleccionada');
+        } else {
+          clearSelection();
+          setStatus('Sin selección activa');
+        }
+        return;
+      }
+
+      if (state.tools.mode === 'eraser') {
+        if (hover.closestHit) {
+          normalizeRelationsAfterDelete(hover.closestHit.staffIndex, hover.closestHit.originalIdx);
+          getStaffData(hover.closestHit.staffIndex).notes.splice(hover.closestHit.originalIdx, 1);
+          if (
+            state.ui.selected &&
+            state.ui.selected.staffIndex === hover.closestHit.staffIndex &&
+            state.ui.selected.noteIndex === hover.closestHit.originalIdx
+          ) {
+            clearSelection();
+          }
+          saveState();
+          requestDraw();
+          updateHarmonyPanel();
+          setStatus('Nota eliminada');
+        }
+        return;
+      }
+
+      if (state.tools.mode === 'tie' || state.tools.mode === 'slur') {
+        if (!hover.closestHit) return;
+
+        if (!state.ui.actionStart) {
+          state.ui.actionStart = {
+            staffIndex: hover.closestHit.staffIndex,
+            noteIndex: hover.closestHit.originalIdx,
+            kind: state.tools.mode
+          };
+          setStatus(`Se marcó el inicio del ${state.tools.mode === 'tie' ? 'enlace' : 'fraseo'}`);
+          return;
+        }
+
+        const actionStart = state.ui.actionStart;
+        state.ui.actionStart = null;
+
+        if (actionStart.staffIndex !== hover.closestHit.staffIndex) {
+          setStatus('El inicio y el final deben estar en el mismo pentagrama');
+          return;
+        }
+
+        if (actionStart.noteIndex === hover.closestHit.originalIdx) return;
+
+        const start = Math.min(actionStart.noteIndex, hover.closestHit.originalIdx);
+        const end = Math.max(actionStart.noteIndex, hover.closestHit.originalIdx);
+        const targetStaff = getStaffData(actionStart.staffIndex);
+
+        if (state.tools.mode === 'tie') {
+          const startNote = targetStaff.notes[start];
+          const endNote = targetStaff.notes[end];
+          if (
+            !startNote ||
+            !endNote ||
+            String(startNote.dur || '').includes('r') ||
+            String(endNote.dur || '').includes('r') ||
+            end !== start + 1 ||
+            !sameChord(startNote, endNote, state.layout.clefs[actionStart.staffIndex], state.layout.clefs[actionStart.staffIndex])
+          ) {
+            setStatus('La unión manual requiere notas iguales y consecutivas');
+            return;
+          }
+          targetStaff.manualTies.push({ start, end });
+        } else {
+          targetStaff.slurs.push({ start, end });
+        }
+
+        saveState();
+        requestDraw();
+        updateHarmonyPanel();
+        setStatus(state.tools.mode === 'tie' ? 'Unión agregada' : 'Fraseo agregado');
+        return;
+      }
+
+      if (state.tools.mode === 'chord') {
+        if (hover.closestHit && staff.notes[hover.closestHit.originalIdx] && !String(staff.notes[hover.closestHit.originalIdx].dur || '').includes('r')) {
+          const target = staff.notes[hover.closestHit.originalIdx];
+          const keys = getNoteKeys(target, hover.clef);
+          if (!keys.includes(hover.pitch)) {
+            keys.push(hover.pitch);
+            target.keys = sortChordKeys(keys);
+            target.key = target.keys[0];
+            saveState();
+            requestDraw();
+            updateHarmonyPanel();
+            previewPitchOrChord(target.keys);
+            setStatus('Nota añadida al acorde');
+          }
+        } else {
+          const entry = createNewEntryFromHover(hover);
+          const index = Math.max(0, Math.min(hover.insertIndex, staff.notes.length));
+          normalizeRelationsAfterInsert(hover.staffIndex, index);
+          staff.notes.splice(index, 0, entry);
+          saveState();
+          requestDraw();
+          selectNote(hover.staffIndex, index);
+          previewPitchOrChord(entry.key);
+          setStatus('Acorde inicial creado');
+        }
+        return;
+      }
+
+      const index = Math.max(0, Math.min(hover.insertIndex, staff.notes.length));
+      normalizeRelationsAfterInsert(hover.staffIndex, index);
+
+      const newEntry = state.tools.mode === 'rest'
+        ? { key: hover.pitch, dur: `${state.tools.duration}r` }
+        : createNewEntryFromHover(hover);
+
+      staff.notes.splice(index, 0, newEntry);
+      saveState();
+      requestDraw();
+      selectNote(hover.staffIndex, index);
+      if (state.tools.mode !== 'rest') previewPitchOrChord(newEntry.key);
+      setStatus(state.tools.mode === 'rest' ? 'Silencio agregado' : 'Nota agregada');
+    }
+
+    function formatKeyHuman(key) {
+      const match = String(key).match(/^([a-g])([#b]?)[/](\d+)$/i);
+      if (!match) return key;
+      return `${match[1].toUpperCase()}${match[2]}${match[3]}`;
+    }
+
+    function updateSelectionSummary() {
+      const summary = document.getElementById('selection-summary');
+      const selected = state.ui.selected;
+      if (!selected) {
+        summary.textContent = 'Selecciona una nota para moverla, cambiar duración o ajustar su alteración.';
+        updateQuickEditAvailability(false, false);
+        return;
+      }
+
+      const note = getStaffData(selected.staffIndex).notes[selected.noteIndex];
+      if (!note) {
+        summary.textContent = 'La selección ya no existe.';
+        updateQuickEditAvailability(false, false);
+        return;
+      }
+      if (String(note.dur || '').includes('r')) {
+        updateQuickEditAvailability(true, false);
+        summary.innerHTML = `Silencio seleccionado en pentagrama ${selected.staffIndex + 1}. Duración: <strong>${note.dur}</strong>.`;
+        return;
+      }
+
+      updateQuickEditAvailability(true, true);
+      const keys = getNoteKeys(note, state.layout.clefs[selected.staffIndex]).map(formatKeyHuman).join(', ');
+      summary.innerHTML = `Pentagrama <strong>${selected.staffIndex + 1}</strong> · Sonido: <strong>${keys}</strong> · Duración: <strong>${note.dur}</strong>`;
+    }
+
+    function updateQuickEditAvailability(selectedEnabled, pitchEnabled) {
+      document.getElementById('btn-delete-selected').disabled = !selectedEnabled;
+      [
+        'btn-note-up',
+        'btn-note-down',
+        'btn-set-natural',
+        'btn-set-sharp',
+        'btn-set-flat'
+      ].forEach(id => {
+        document.getElementById(id).disabled = !pitchEnabled;
+      });
+      document.querySelectorAll('.quick-dur-btn').forEach(btn => {
+        btn.disabled = !selectedEnabled;
+      });
+    }
+
+    function changeSelectedDuration(dur) {
+      const selected = state.ui.selected;
+      if (!selected) return;
+      const note = getStaffData(selected.staffIndex).notes[selected.noteIndex];
+      if (!note) return;
+
+      const isRest = String(note.dur || '').includes('r');
+      note.dur = `${dur}${isRest ? 'r' : ''}`;
+      saveState();
+      requestDraw();
+      updateSelectionSummary();
+      updateHarmonyPanel();
+      setStatus('Duración actualizada');
+    }
+
+    function shiftPitchOneStep(staffIndex, noteIndex, direction) {
+      const note = getStaffData(staffIndex).notes[noteIndex];
+      if (!note || String(note.dur || '').includes('r')) return;
+      const clef = state.layout.clefs[staffIndex];
+      const pitchMap = getPitchMap(clef);
+
+      note.keys = getNoteKeys(note, clef).map(key => {
+        const naturalKey = stripAccidental(key);
+        const accidental = extractAccidental(key);
+        const index = pitchMap.indexOf(naturalKey);
+        if (index < 0) return key;
+        const nextIndex = Math.max(0, Math.min(index - direction, pitchMap.length - 1));
+        return applyAccidentalToKey(pitchMap[nextIndex], accidental);
+      });
+      note.keys = sortChordKeys(note.keys);
+      note.key = note.keys[0];
+    }
+
+    function nudgeSelectedPitch(direction) {
+      const selected = state.ui.selected;
+      if (!selected) return;
+      shiftPitchOneStep(selected.staffIndex, selected.noteIndex, direction);
+      saveState();
+      requestDraw();
+      updateSelectionSummary();
+      updateHarmonyPanel();
+      setStatus(direction > 0 ? 'Nota subida' : 'Nota bajada');
+    }
+
+    function setSelectedAccidental(accidental) {
+      const selected = state.ui.selected;
+      if (!selected) return;
+      const note = getStaffData(selected.staffIndex).notes[selected.noteIndex];
+      if (!note || String(note.dur || '').includes('r')) return;
+
+      note.keys = getNoteKeys(note, state.layout.clefs[selected.staffIndex]).map(key => applyAccidentalToKey(stripAccidental(key), accidental));
+      note.keys = sortChordKeys(note.keys);
+      note.key = note.keys[0];
+      saveState();
+      requestDraw();
+      updateSelectionSummary();
+      updateHarmonyPanel();
+      setStatus('Alteración actualizada');
+    }
+
+    function deleteSelectedNote() {
+      const selected = state.ui.selected;
+      if (!selected) return;
+      normalizeRelationsAfterDelete(selected.staffIndex, selected.noteIndex);
+      getStaffData(selected.staffIndex).notes.splice(selected.noteIndex, 1);
+      clearSelection();
+      saveState();
+      requestDraw();
+      updateHarmonyPanel();
+      setStatus('Se eliminó la nota seleccionada');
+    }
+
+    function updateTimeSignature() {
+      let numerator = parseInt(document.getElementById('time-num-input').value, 10) || 4;
+      let denominator = parseInt(document.getElementById('time-den-input').value, 10) || 4;
+
+      numerator = Math.max(1, Math.min(12, numerator));
+      denominator = [2, 4, 8].includes(denominator) ? denominator : 4;
+
+      state.layout.timeNumerator = numerator;
+      state.layout.timeDenominator = denominator;
+      saveState();
+      requestDraw();
+      updateHarmonyPanel();
+      setStatus('Compás actualizado');
+    }
+
+    function setStaffMode(mode) {
+      state.layout.staffMode = mode;
+      if (mode === 'single' && state.layout.activeStaff === 1) {
+        state.layout.activeStaff = 0;
+      }
+      syncControlsFromState();
+      saveState();
+      requestDraw();
+      updateHarmonyPanel();
+      setStatus(mode === 'grand' ? 'Modo de dos pentagramas activado' : 'Modo de un pentagrama activado');
+    }
+
+    function setActiveStaff(index) {
+      state.layout.activeStaff = index;
+      document.getElementById('btn-staff-0').classList.toggle('is-active', index === 0);
+      document.getElementById('btn-staff-1').classList.toggle('is-active', index === 1);
+      updateHarmonyPanel();
+      requestDraw();
+      setStatus(`Pentagrama ${index + 1} activo`);
+    }
+
+    function setSheetZoom(value, persist = true) {
+      state.layout.sheetZoom = value || 1;
+      const sheet = document.getElementById('sheet');
+      sheet.style.transform = `scale(${state.layout.sheetZoom})`;
+      sheet.style.marginRight = state.layout.sheetZoom < 1 ? `-${Math.round((1 - state.layout.sheetZoom) * 880)}px` : '0';
+      sheet.style.marginBottom = state.layout.sheetZoom < 1 ? `-${Math.round((1 - state.layout.sheetZoom) * 520)}px` : '0';
+
+      document.querySelectorAll('[data-zoom]').forEach(btn => {
+        btn.classList.toggle('is-active', Number(btn.dataset.zoom) === state.layout.sheetZoom);
+      });
+
+      if (persist) {
+        saveState();
+        setStatus(`Zoom ajustado a ${Math.round(state.layout.sheetZoom * 100)}%`);
+      }
+    }
+
+    function clearAll() {
+      if (!confirm('¿Seguro que quieres limpiar toda la partitura?')) return;
+
+      state.music = createEmptyMusicState();
+      clearSelection();
+      stop();
+      updateRepeatSummary();
+      saveState();
+      requestDraw();
+      updateHarmonyPanel();
+      setStatus('La partitura fue limpiada');
+    }
+
+    function toggleFinalBar() {
+      state.layout.finalBarEnabled = !state.layout.finalBarEnabled;
+      document.getElementById('btn-final-bar').classList.toggle('is-active', state.layout.finalBarEnabled);
+      saveState();
+      requestDraw();
+      setStatus(state.layout.finalBarEnabled ? 'Compás final activado' : 'Compás final desactivado');
+    }
+
+    function getRepeatMeasureIndexFromInput() {
+      const count = getExistingMeasureCount();
+      const input = document.getElementById('repeat-measure-input');
+      let value = parseInt(input.value, 10) || 1;
+      value = Math.max(1, Math.min(count, value));
+      input.value = value;
+      return value - 1;
+    }
+
+    function setRepeatMarker(kind) {
+      const measureIndex = getRepeatMeasureIndexFromInput();
+      if (kind === 'clear') {
+        setMeasureMeta(measureIndex, { repeatStart: false, repeatEnd: false });
+      } else if (kind === 'start') {
+        const current = getMeasureMeta(measureIndex);
+        setMeasureMeta(measureIndex, { repeatStart: !current.repeatStart });
+      } else if (kind === 'end') {
+        const current = getMeasureMeta(measureIndex);
+        setMeasureMeta(measureIndex, { repeatEnd: !current.repeatEnd });
+      }
+
+      updateRepeatSummary();
+      saveState();
+      requestDraw();
+      setStatus('Repetición actualizada');
+    }
+
+    function exportScoreToFile() {
+      const payload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        data: JSON.parse(makeSnapshot())
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const safeTitle = (state.meta.title || 'partitura').replace(/[^\w\-]+/g, '_');
+      link.href = url;
+      link.download = `${safeTitle || 'partitura'}.avorigen.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setStatus('Archivo exportado');
+    }
+
+    function importScoreFromObject(raw) {
+      const imported = raw?.data || raw;
+      if (!imported || typeof imported !== 'object') {
+        throw new Error('Formato no válido');
+      }
+      stop();
+      applySnapshot(imported);
+      state.history = [];
+      state.historyIndex = -1;
+      saveState();
+      updateUndoButton();
+      requestDraw();
+      updateHarmonyPanel();
+      updateRepeatSummary();
+      setStatus('Archivo importado correctamente');
+    }
+
+    function handleImportFileChange(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = loadEvent => {
+        try {
+          const parsed = JSON.parse(String(loadEvent.target?.result || '{}'));
+          importScoreFromObject(parsed);
+        } catch (err) {
+          alert('No se pudo importar el archivo. Verifica que sea un .avorigen.json válido.');
+          setStatus('Error al importar archivo');
+        } finally {
+          event.target.value = '';
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function toggleMetronome() {
+      state.audio.metronomeEnabled = !state.audio.metronomeEnabled;
+      document.getElementById('btn-metronome').classList.toggle('is-active', state.audio.metronomeEnabled);
+      saveState();
+      setStatus(state.audio.metronomeEnabled ? 'Metrónomo activado' : 'Metrónomo desactivado');
+    }
+
+    function setTool(mode) {
+      state.tools.mode = mode;
+      state.ui.actionStart = null;
+      document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.classList.toggle('is-active', btn.dataset.tool === mode);
+      });
+      requestDraw();
+      setStatus(`Herramienta activa: ${mode}`);
+    }
+
+    function setDuration(dur) {
+      state.tools.duration = dur;
+      document.querySelectorAll('.dur-btn').forEach(btn => {
+        btn.classList.toggle('is-active', btn.dataset.dur === dur);
+      });
+      requestDraw();
+      setStatus(`Figura activa: ${dur}`);
+    }
+
+    function setInsertAccidental(accidental) {
+      state.tools.insertAccidental = accidental;
+      document.querySelectorAll('.accidental-btn').forEach(btn => {
+        btn.classList.toggle('is-active', btn.dataset.acc === accidental);
+      });
+      requestDraw();
+      setStatus(`Alteración de inserción: ${accidental || 'natural'}`);
+    }
+
+    function noteNameFromPitchClass(pc, preferFlats = false) {
+      const sharpNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      const flatNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+      return (preferFlats ? flatNames : sharpNames)[((pc % 12) + 12) % 12];
+    }
+
+    function parseKeySignature(signature) {
+      const isMinor = signature.endsWith('m');
+      const tonicText = isMinor ? signature.slice(0, -1) : signature;
+      const tonicPcMap = {
+        C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5, 'F#': 6, Gb: 6,
+        G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11, Cb: 11
+      };
+      return {
+        tonicPc: tonicPcMap[tonicText] ?? 0,
+        tonicText,
+        mode: isMinor ? 'minor' : 'major'
+      };
+    }
+
+    function buildScalePitchClasses(signature) {
+      const { tonicPc, mode } = parseKeySignature(signature);
+      const intervals = mode === 'minor'
+        ? [0, 2, 3, 5, 7, 8, 10]
+        : [0, 2, 4, 5, 7, 9, 11];
+      return intervals.map(interval => (tonicPc + interval) % 12);
+    }
+
+    function buildDiatonicChords(signature) {
+      const { tonicPc, mode } = parseKeySignature(signature);
+      const scale = buildScalePitchClasses(signature);
+      const romanMajor = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'];
+      const romanMinor = ['i', 'ii°', 'III', 'iv', 'v', 'VI', 'VII'];
+      const qualitiesMajor = ['maj', 'min', 'min', 'maj', 'maj', 'min', 'dim'];
+      const qualitiesMinor = ['min', 'dim', 'maj', 'min', 'min', 'maj', 'maj'];
+      const romans = mode === 'minor' ? romanMinor : romanMajor;
+      const qualities = mode === 'minor' ? qualitiesMinor : qualitiesMajor;
+      const preferFlats = /b/.test(signature);
+
+      return scale.map((pitchClass, index) => {
+        const rootName = noteNameFromPitchClass(pitchClass, preferFlats);
+        const quality = qualities[index];
+        const chordLabel = quality === 'maj'
+          ? rootName
+          : quality === 'min'
+            ? `${rootName}m`
+            : `${rootName}dim`;
+        return {
+          degree: romans[index],
+          chord: chordLabel,
+          pitchClass
+        };
+      });
+    }
+
+    function detectChord(keys) {
+      const pitchClasses = [...new Set(keys.map(keyToPitchClass))];
+      if (pitchClasses.length < 2) return null;
+
+      const preferFlats = /b/.test(state.layout.keySignature);
+      const patterns = {
+        '0,4,7': '',
+        '0,3,7': 'm',
+        '0,3,6': 'dim',
+        '0,4,8': 'aug',
+        '0,4,7,10': '7',
+        '0,4,7,11': 'maj7',
+        '0,3,7,10': 'm7',
+        '0,3,6,10': 'm7b5',
+        '0,3,6,9': 'dim7'
+      };
+
+      for (const rootPc of pitchClasses) {
+        const normalized = pitchClasses
+          .map(pc => (pc - rootPc + 12) % 12)
+          .sort((a, b) => a - b)
+          .join(',');
+
+        if (patterns[normalized] !== undefined) {
+          return {
+            rootPc,
+            quality: patterns[normalized],
+            label: `${noteNameFromPitchClass(rootPc, preferFlats)}${patterns[normalized]}`
+          };
+        }
+      }
+
+      return null;
+    }
+
+    function buildCadenceHint(chordInfo) {
+      if (!chordInfo) return 'Prueba una progresión diatónica sencilla: I - IV - V - I.';
+      const diatonic = buildDiatonicChords(state.layout.keySignature);
+      const match = diatonic.find(chord => chord.pitchClass === chordInfo.rootPc);
+      if (!match) return 'Este acorde parece cromático; úsalo como color o como acorde de paso.';
+
+      const degree = match.degree.replace(/[^ivIV]/g, '').toLowerCase();
+      if (degree === 'ii') return 'Después de ii suele funcionar muy bien un V o V7.';
+      if (degree === 'iv') return 'IV suele preparar muy bien un V o regresar a I.';
+      if (degree === 'vii') return 'vii° suele resolver hacia I o i por atracción de sensible.';
+      if (degree === 'v') return 'V pide una resolución clara hacia I en contexto tonal.';
+      if (degree === 'vi') return 'vi puede suavizar la llegada o enlazar hacia ii o IV.';
+      if (degree === 'iii') return 'iii suele usarse como acorde de paso o para prolongar la tónica.';
+      return 'Puedes mover este acorde hacia subdominante o dominante según la frase.';
+    }
+
+    function updateHarmonyPanel() {
+      const hints = document.getElementById('harmony-hints');
+      const diatonic = buildDiatonicChords(state.layout.keySignature);
+      document.getElementById('diatonic-chords').innerHTML = diatonic
+        .map(item => `<strong>${item.degree}</strong>: ${item.chord}`)
+        .join(' · ');
+
+      const selected = state.ui.selected;
+      const scale = buildScalePitchClasses(state.layout.keySignature);
+
+      if (!selected) {
+        hints.innerHTML = `
+          <div>Tonalidad actual: <strong>${state.layout.keySignature}</strong>.</div>
+          <div>Consejo: escribe primero la idea melódica y luego prueba acordes de <strong>tónica</strong>, <strong>subdominante</strong> y <strong>dominante</strong>.</div>
+          <div>${buildCadenceHint(null)}</div>
+        `;
+        return;
+      }
+
+      const note = getStaffData(selected.staffIndex).notes[selected.noteIndex];
+      if (!note) {
+        hints.innerHTML = '<div>No hay información armónica disponible.</div>';
+        return;
+      }
+
+      if (String(note.dur || '').includes('r')) {
+        hints.innerHTML = `
+          <div>Silencio seleccionado.</div>
+          <div>Úsalo para crear respiración, pregunta-respuesta o separar funciones armónicas.</div>
+        `;
+        return;
+      }
+
+      const keys = getNoteKeys(note, state.layout.clefs[selected.staffIndex]);
+      const chordInfo = detectChord(keys);
+      const outsideScale = keys.filter(key => !scale.includes(keyToPitchClass(key)));
+      const degreesContainingNotes = diatonic.filter(chord => {
+        const triadPitchClasses = buildChordPitchClassesFromLabel(chord.chord);
+        return keys.some(key => triadPitchClasses.includes(keyToPitchClass(key)));
+      });
+
+      const blocks = [];
+      blocks.push(`<div>Notas activas: <strong>${keys.map(formatKeyHuman).join(', ')}</strong></div>`);
+
+      if (chordInfo) {
+        const degreeMatch = diatonic.find(chord => chord.pitchClass === chordInfo.rootPc);
+        blocks.push(`<div>Acorde detectado: <strong>${chordInfo.label}</strong>${degreeMatch ? ` · grado <strong>${degreeMatch.degree}</strong>` : ''}</div>`);
+      } else if (keys.length === 1) {
+        blocks.push('<div>Nota simple: piensa qué acorde diatónico la puede sostener mejor.</div>');
+      } else {
+        blocks.push('<div>Sonoridad abierta: todavía no coincide con un acorde básico reconocido.</div>');
+      }
+
+      if (outsideScale.length) {
+        blocks.push(`<div>Atención: fuera de tonalidad → <strong>${outsideScale.map(formatKeyHuman).join(', ')}</strong></div>`);
+      } else {
+        blocks.push('<div>Todo lo seleccionado está dentro de la tonalidad actual.</div>');
+      }
+
+      if (degreesContainingNotes.length) {
+        blocks.push(`<div>Acordes diatónicos cercanos: <strong>${degreesContainingNotes.slice(0, 4).map(item => `${item.degree} (${item.chord})`).join(' · ')}</strong></div>`);
+      }
+
+      blocks.push(`<div>${buildCadenceHint(chordInfo)}</div>`);
+      hints.innerHTML = blocks.join('');
+    }
+
+    function buildChordPitchClassesFromLabel(chordLabel) {
+      const match = String(chordLabel).match(/^([A-G])([#b]?)(.*)$/);
+      if (!match) return [];
+      const rootText = `${match[1]}${match[2] || ''}`;
+      const map = {
+        C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5, 'F#': 6, Gb: 6,
+        G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11
+      };
+      const rootPc = map[rootText] ?? 0;
+      const suffix = match[3] || '';
+      let pattern = [0, 4, 7];
+      if (suffix === 'm') pattern = [0, 3, 7];
+      if (suffix === 'dim') pattern = [0, 3, 6];
+      return pattern.map(interval => (rootPc + interval) % 12);
+    }
+
+    function buildMeasurePlaybackOrder(measureCount) {
+      const order = [];
+      let repeatStart = 0;
+
+      for (let measureIndex = 0; measureIndex < measureCount; measureIndex += 1) {
+        order.push(measureIndex);
+        const meta = getMeasureMeta(measureIndex);
+        if (meta.repeatStart) {
+          repeatStart = measureIndex;
+        }
+        if (meta.repeatEnd) {
+          for (let repeatIndex = repeatStart; repeatIndex <= measureIndex; repeatIndex += 1) {
+            order.push(repeatIndex);
+          }
+          repeatStart = measureIndex + 1;
+        }
+      }
+
+      return order;
+    }
+
+    function expandEventsByMeasureOrder(events, measureBeats, measureOrder) {
+      const grouped = new Map();
+      events.forEach(event => {
+        const measureIndex = Math.floor(event.beat / measureBeats);
+        const beatInsideMeasure = event.beat - measureIndex * measureBeats;
+        if (!grouped.has(measureIndex)) grouped.set(measureIndex, []);
+        grouped.get(measureIndex).push({ ...event, beatInsideMeasure });
+      });
+
+      const expanded = [];
+      measureOrder.forEach((measureIndex, sequenceIndex) => {
+        const eventsInMeasure = grouped.get(measureIndex) || [];
+        eventsInMeasure.forEach(event => {
+          expanded.push({
+            ...event,
+            beat: sequenceIndex * measureBeats + event.beatInsideMeasure
+          });
+        });
+      });
+
+      return expanded;
+    }
+
+    function buildPlaybackEventsForStaff(staffIndex) {
+      buildProcessedForStaff(staffIndex, false);
+      const processed = state.ui.playbackCache[staffIndex];
+      const manualTies = getStaffData(staffIndex).manualTies;
+      const events = [];
+      let index = 0;
+      let totalBeats = 0;
+
+      while (index < processed.length) {
+        const note = processed[index];
+        let noteBeats = durValues[getDurationBase(note.dur)] || 1;
+        let nextIndex = index + 1;
+
+        let hasManualTie = manualTies.some(rel =>
+          rel.start === note.originalIdx &&
+          rel.end === processed[nextIndex]?.originalIdx
+        );
+
+        let hasAutoTie =
+          processed[nextIndex]?.originalIdx === note.originalIdx &&
+          processed[index].tieStart;
+
+        while (nextIndex < processed.length && (hasManualTie || hasAutoTie)) {
+          noteBeats += durValues[getDurationBase(processed[nextIndex].dur)] || 1;
+          nextIndex += 1;
+
+          hasManualTie = manualTies.some(rel =>
+            rel.start === processed[nextIndex - 1]?.originalIdx &&
+            rel.end === processed[nextIndex]?.originalIdx
+          );
+          hasAutoTie =
+            processed[nextIndex]?.originalIdx === processed[nextIndex - 1]?.originalIdx &&
+            processed[nextIndex - 1]?.tieStart;
+        }
+
+        if (!String(note.dur || '').includes('r')) {
+          events.push({
+            staffIndex,
+            beat: totalBeats,
+            durationBeats: noteBeats,
+            pitch: getNoteKeys(note, state.layout.clefs[staffIndex]).map(key => key.replace('/', '').toUpperCase())
+          });
+        }
+
+        totalBeats += noteBeats;
+        index = nextIndex;
+      }
+
+      return { events, totalBeats };
+    }
+
+    async function play() {
+      try {
+        await Tone.start();
+      } catch (err) {}
+
+      if (Tone.Transport.state === 'started') return;
+
+      if (state.ui.playbackStopTimer) {
+        clearTimeout(state.ui.playbackStopTimer);
+        state.ui.playbackStopTimer = null;
+      }
+
+      if (state.ui.pausedPlayback && state.ui.playbackPrepared) {
+        state.ui.pausedPlayback = false;
+        Tone.Transport.start('+0.05');
+        const remaining = Math.max(0.2, state.ui.scheduledPlaybackDuration - Tone.Transport.seconds + 0.4);
+        state.ui.playbackStopTimer = setTimeout(finishPlaybackNaturally, remaining * 1000);
+        setStatus('Reproducción reanudada');
+        return;
+      }
+
+      Tone.Transport.stop();
+      Tone.Transport.cancel();
+      Tone.Transport.seconds = 0;
+      Tone.Transport.position = 0;
+      Tone.Transport.bpm.value = state.audio.bpm;
+
+      const measureCount = getExistingMeasureCount();
+      const startMeasure = Math.max(1, Math.min(measureCount, parseInt(document.getElementById('start-measure-input').value, 10) || 1));
+      const measureBeats = getMeasureBeats();
+      const beatSeconds = 60 / state.audio.bpm;
+      const measureOrder = buildMeasurePlaybackOrder(measureCount);
+      const firstOccurrence = measureOrder.indexOf(startMeasure - 1);
+      const startBeat = Math.max(0, (firstOccurrence >= 0 ? firstOccurrence : startMeasure - 1) * measureBeats);
+
+      const playbackA = buildPlaybackEventsForStaff(0);
+      const playbackB = state.layout.staffMode === 'grand'
+        ? buildPlaybackEventsForStaff(1)
+        : { events: [], totalBeats: 0 };
+
+      const expandedA = expandEventsByMeasureOrder(playbackA.events, measureBeats, measureOrder);
+      const expandedB = expandEventsByMeasureOrder(playbackB.events, measureBeats, measureOrder);
+      const allEvents = [...expandedA, ...expandedB];
+      const totalBeats = measureOrder.length * measureBeats;
+
+      allEvents.forEach(event => {
+        if (event.beat < startBeat) return;
+        const startAt = (event.beat - startBeat) * beatSeconds;
+        const durSeconds = event.durationBeats * beatSeconds * 0.86;
+        Tone.Transport.schedule(time => {
+          try {
+            synth.triggerAttackRelease(event.pitch.length === 1 ? event.pitch[0] : event.pitch, durSeconds, time);
+          } catch (err) {}
+        }, startAt);
+      });
+
+      if (state.audio.metronomeEnabled) {
+        const totalRemaining = Math.max(0, Math.ceil(totalBeats - startBeat));
+        for (let beatIndex = 0; beatIndex < totalRemaining; beatIndex += 1) {
+          const realBeat = beatIndex + startBeat;
+          Tone.Transport.schedule(time => {
+            metSynth.triggerAttackRelease(realBeat % measureBeats === 0 ? 'C6' : 'C5', '32n', time);
+          }, beatIndex * beatSeconds);
+        }
+      }
+
+      state.ui.scheduledPlaybackDuration = Math.max(0.2, (totalBeats - startBeat) * beatSeconds);
+      state.ui.playbackPrepared = true;
+      state.ui.pausedPlayback = false;
+
+      Tone.Transport.start('+0.05');
+      state.ui.playbackStopTimer = setTimeout(finishPlaybackNaturally, (state.ui.scheduledPlaybackDuration + 0.4) * 1000);
+      setStatus('Reproduciendo partitura');
+    }
+
+    function finishPlaybackNaturally() {
+      if (state.ui.playbackStopTimer) {
+        clearTimeout(state.ui.playbackStopTimer);
+        state.ui.playbackStopTimer = null;
+      }
+
+      Tone.Transport.stop();
+      Tone.Transport.cancel();
+      Tone.Transport.seconds = 0;
+      Tone.Transport.position = 0;
+
+      state.ui.playbackPrepared = false;
+      state.ui.pausedPlayback = false;
+      state.ui.scheduledPlaybackDuration = 0;
+      setStatus('Reproducción finalizada');
+    }
+
+    function pause() {
+      if (Tone.Transport.state === 'started') {
+        Tone.Transport.pause();
+        state.ui.pausedPlayback = true;
+        if (state.ui.playbackStopTimer) {
+          clearTimeout(state.ui.playbackStopTimer);
+          state.ui.playbackStopTimer = null;
+        }
+        setStatus('Reproducción en pausa');
+      }
+    }
+
+    function stop() {
+      if (state.ui.playbackStopTimer) {
+        clearTimeout(state.ui.playbackStopTimer);
+        state.ui.playbackStopTimer = null;
+      }
+
+      Tone.Transport.stop();
+      Tone.Transport.cancel();
+      Tone.Transport.seconds = 0;
+      Tone.Transport.position = 0;
+
+      state.ui.playbackPrepared = false;
+      state.ui.pausedPlayback = false;
+      state.ui.scheduledPlaybackDuration = 0;
+      setStatus('Reproducción detenida');
+    }
+
+    function printScore() {
+      state.ui.printMode = true;
+      const sheet = document.getElementById('sheet');
+      const oldTransform = sheet.style.transform;
+      const oldMarginRight = sheet.style.marginRight;
+      const oldMarginBottom = sheet.style.marginBottom;
+      sheet.style.transform = 'none';
+      sheet.style.marginRight = '0';
+      sheet.style.marginBottom = '0';
+      draw();
+
+      setTimeout(() => {
+        window.focus();
+        window.print();
+        setTimeout(() => {
+          state.ui.printMode = false;
+          sheet.style.transform = oldTransform;
+          sheet.style.marginRight = oldMarginRight;
+          sheet.style.marginBottom = oldMarginBottom;
+          requestDraw();
+        }, 700);
+      }, 200);
+    }
+
+    function bindEvents() {
+      document.getElementById('btn-undo').addEventListener('click', undo);
+      document.getElementById('btn-save-file').addEventListener('click', exportScoreToFile);
+      document.getElementById('btn-load-file').addEventListener('click', () => {
+        document.getElementById('file-import-input').click();
+      });
+      document.getElementById('btn-print').addEventListener('click', printScore);
+      document.getElementById('btn-clear').addEventListener('click', clearAll);
+      document.getElementById('file-import-input').addEventListener('change', handleImportFileChange);
+      document.getElementById('btn-play').addEventListener('click', play);
+      document.getElementById('btn-pause').addEventListener('click', pause);
+      document.getElementById('btn-stop').addEventListener('click', stop);
+      document.getElementById('btn-metronome').addEventListener('click', toggleMetronome);
+      document.getElementById('btn-final-bar').addEventListener('click', toggleFinalBar);
+      document.getElementById('btn-repeat-start').addEventListener('click', () => setRepeatMarker('start'));
+      document.getElementById('btn-repeat-end').addEventListener('click', () => setRepeatMarker('end'));
+      document.getElementById('btn-repeat-clear').addEventListener('click', () => setRepeatMarker('clear'));
+      document.getElementById('btn-single-staff').addEventListener('click', () => setStaffMode('single'));
+      document.getElementById('btn-grand-staff').addEventListener('click', () => setStaffMode('grand'));
+      document.getElementById('btn-staff-0').addEventListener('click', () => setActiveStaff(0));
+      document.getElementById('btn-staff-1').addEventListener('click', () => setActiveStaff(1));
+      document.getElementById('btn-note-up').addEventListener('click', () => nudgeSelectedPitch(1));
+      document.getElementById('btn-note-down').addEventListener('click', () => nudgeSelectedPitch(-1));
+      document.getElementById('btn-delete-selected').addEventListener('click', deleteSelectedNote);
+      document.getElementById('btn-set-natural').addEventListener('click', () => setSelectedAccidental(''));
+      document.getElementById('btn-set-sharp').addEventListener('click', () => setSelectedAccidental('#'));
+      document.getElementById('btn-set-flat').addEventListener('click', () => setSelectedAccidental('b'));
+
+      document.querySelectorAll('.quick-dur-btn').forEach(btn => {
+        btn.addEventListener('click', () => changeSelectedDuration(btn.dataset.dur));
+      });
+      document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.addEventListener('click', () => setTool(btn.dataset.tool));
+      });
+      document.querySelectorAll('.dur-btn').forEach(btn => {
+        btn.addEventListener('click', () => setDuration(btn.dataset.dur));
+      });
+      document.querySelectorAll('.accidental-btn').forEach(btn => {
+        btn.addEventListener('click', () => setInsertAccidental(btn.dataset.acc));
+      });
+      document.querySelectorAll('[data-zoom]').forEach(btn => {
+        btn.addEventListener('click', () => setSheetZoom(Number(btn.dataset.zoom)));
+      });
+
+      [
+        'score-title-input',
+        'score-subtitle-input',
+        'teacher-input',
+        'course-input',
+        'date-input',
+        'footer-input',
+        'staff-1-label-input',
+        'staff-2-label-input'
+      ].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => updateStateFromMetaInputs(false));
+        document.getElementById(id).addEventListener('change', () => updateStateFromMetaInputs(true));
+      });
+
+      document.getElementById('top-clef-select').addEventListener('change', event => {
+        state.layout.clefs[0] = event.target.value;
+        saveState();
+        requestDraw();
+        updateHarmonyPanel();
+        setStatus('Clave superior actualizada');
+      });
+      document.getElementById('bottom-clef-select').addEventListener('change', event => {
+        state.layout.clefs[1] = event.target.value;
+        saveState();
+        requestDraw();
+        updateHarmonyPanel();
+        setStatus('Clave inferior actualizada');
+      });
+      document.getElementById('time-num-input').addEventListener('change', updateTimeSignature);
+      document.getElementById('time-den-input').addEventListener('change', updateTimeSignature);
+      document.getElementById('key-signature-select').addEventListener('change', event => {
+        state.layout.keySignature = event.target.value;
+        saveState();
+        requestDraw();
+        updateHarmonyPanel();
+        setStatus('Tonalidad actualizada');
+      });
+      document.getElementById('instrument-select').addEventListener('change', event => {
+        makeInstrument(event.target.value);
+        saveState();
+        setStatus('Instrumento actualizado');
+      });
+      document.getElementById('volume-input').addEventListener('input', () => {
+        updateVolume();
+        persistDraft();
+      });
+      document.getElementById('volume-input').addEventListener('change', saveState);
+      document.getElementById('bpm-input').addEventListener('change', event => {
+        state.audio.bpm = parseInt(event.target.value, 10) || 108;
+        Tone.Transport.bpm.value = state.audio.bpm;
+        saveState();
+        setStatus(`Tempo ajustado a ${state.audio.bpm} BPM`);
+      });
+
+      div.addEventListener('pointermove', event => {
+        if (event.pointerType === 'touch') return;
+        const point = getLocalPointer(event);
+        const hover = computeHoverData(point.x, point.y);
+        updateHoverUI(hover, point);
+      });
+      div.addEventListener('pointerleave', hideFloatingHelpers);
+      div.addEventListener('pointercancel', hideFloatingHelpers);
+      div.addEventListener('pointerdown', handlePointerDown);
+    }
+
+    window.addEventListener('load', () => {
+      populateKeySignatureSelect();
+      makeInstrument(state.audio.instrument);
+      bindEvents();
+
+      const restored = restoreDraftIfPresent();
+      if (!restored) {
+        syncControlsFromState();
+        saveState();
+      }
+
+      updateUndoButton();
+      updateMetaPreview();
+      updateHarmonyPanel();
+      requestDraw();
+    });
+  </script>
+</body>
+</html>
