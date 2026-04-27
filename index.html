@@ -542,7 +542,7 @@
       #sheet {
         box-shadow: none !important;
         border-radius: 0 !important;
-        padding: 8mm 6mm 8mm 8mm !important;
+        padding: 5mm 6mm 8mm 8mm !important;
         margin: 0 !important;
         width: auto !important;
         min-width: 0 !important;
@@ -552,7 +552,7 @@
       }
 
       .score-head {
-        margin-bottom: 8px !important;
+        margin-bottom: 4px !important;
         break-after: auto;
         page-break-after: auto;
       }
@@ -1140,15 +1140,19 @@
     }
 
     function getTopOffset() {
-      return state.ui.printMode ? 28 : TOP_Y;
+      return state.ui.printMode ? 12 : TOP_Y;
     }
 
     function getSingleSystemGap() {
       return state.ui.printMode ? 150 : SINGLE_SYSTEM_GAP;
     }
 
+    function getGrandStaffGap() {
+      return state.ui.printMode ? 72 : GRAND_STAFF_GAP;
+    }
+
     function getGrandSystemGap() {
-      return state.ui.printMode ? 228 : GRAND_SYSTEM_GAP;
+      return state.ui.printMode ? 184 : GRAND_SYSTEM_GAP;
     }
 
     function getMeasureBeats() {
@@ -1808,12 +1812,13 @@
       const measuresPerLine = getMeasuresPerLine();
       const measureWidth = getMeasureWidth();
       const singleGap = getSingleSystemGap();
+      const grandStaffGap = getGrandStaffGap();
       const grandGap = getGrandSystemGap();
       const systemCount = Math.max(1, Math.ceil(measureCount / measuresPerLine));
       const topOffset = getTopOffset();
       const width = LEFT_X + (measuresPerLine * measureWidth) + 60;
       const height = state.layout.staffMode === 'grand'
-        ? topOffset + (systemCount * grandGap) + (state.ui.printMode ? 82 : 140)
+        ? topOffset + grandStaffGap + ((systemCount - 1) * grandGap) + (state.ui.printMode ? 78 : 140)
         : topOffset + (systemCount * singleGap) + (state.ui.printMode ? 82 : 140);
 
       renderer.resize(width, height);
@@ -1910,6 +1915,7 @@
       const measureWidth = getMeasureWidth();
       const topOffset = getTopOffset();
       const singleGap = getSingleSystemGap();
+      const grandStaffGap = getGrandStaffGap();
       const grandGap = getGrandSystemGap();
 
       for (let measureIndex = 0; measureIndex < measureCount; measureIndex += 1) {
@@ -1917,7 +1923,7 @@
         const positionInLine = measureIndex % measuresPerLine;
         const measureX = LEFT_X + positionInLine * measureWidth;
         const topY = topOffset + (state.layout.staffMode === 'grand' ? systemIndex * grandGap : systemIndex * singleGap);
-        const bottomY = topY + GRAND_STAFF_GAP;
+        const bottomY = topY + grandStaffGap;
         const isFirstInLine = positionInLine === 0;
         const isLastContentMeasure = measureIndex === measureCount - 1;
 
