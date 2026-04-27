@@ -931,15 +931,41 @@
       'Dm', 'Gm', 'Cm', 'Fm', 'Bbm', 'Ebm', 'Abm'
     ];
 
+    /*
+      ============================================================
+      TEXTOS EDITABLES SEGUROS
+      ============================================================
+      Cambia SOLO los valores de este bloque si quieres modificar
+      textos visibles sin afectar la lógica del editor.
+
+      Ejemplos:
+      - footerLabelSingle: cambia "Pentagrama individual"
+      - footerLabelGrand: cambia "Gran pentagrama"
+      - defaultStaffLabels: cambia etiquetas por defecto
+      - brandSubtitle / defaultFooter / defaultSubtitle
+      ============================================================
+    */
+    const EDITABLE_TEXT = {
+      appName: 'Avorigen Music Studio Edu',
+      brandSubtitle: 'Creada por Maxdiel Boniche para uso del ministerio de alabanza',
+      defaultTitle: 'Mi partitura',
+      untitledFallback: 'Sin título',
+      defaultSubtitle: 'Creada por Maxdiel Boniche para uso del ministerio de alabanza',
+      defaultFooter: 'Creada por Maxdiel Boniche para uso del ministerio de alabanza',
+      defaultStaffLabels: ['Superior', 'Inferior'],
+      footerLabelSingle: 'Pentagrama individual',
+      footerLabelGrand: 'Gran pentagrama'
+    };
+
     const state = {
       meta: {
-        title: 'Mi partitura',
-        subtitle: 'Creada por Maxdiel Boniche para uso del ministerio de alabanza',
+        title: EDITABLE_TEXT.defaultTitle,
+        subtitle: EDITABLE_TEXT.defaultSubtitle,
         teacher: '',
         course: '',
         date: '',
-        footer: 'Creada por Maxdiel Boniche para uso del ministerio de alabanza',
-        staffLabels: ['Superior', 'Inferior']
+        footer: EDITABLE_TEXT.defaultFooter,
+        staffLabels: [...EDITABLE_TEXT.defaultStaffLabels]
       },
       layout: {
         staffMode: 'single',
@@ -1246,6 +1272,13 @@
       return state.music.staves[staffIndex];
     }
 
+    function applyEditableTextConfigToStaticUI() {
+      const brandTitle = document.querySelector('.brand-title');
+      const brandSubtitle = document.querySelector('.brand-subtitle');
+      if (brandTitle) brandTitle.textContent = EDITABLE_TEXT.appName;
+      if (brandSubtitle) brandSubtitle.textContent = EDITABLE_TEXT.brandSubtitle;
+    }
+
     function createEmptyMusicState() {
       return {
         measureMeta: {},
@@ -1478,7 +1511,7 @@
     }
 
     function updateMetaPreview() {
-      document.getElementById('render-title').textContent = state.meta.title || 'Sin título';
+      document.getElementById('render-title').textContent = state.meta.title || EDITABLE_TEXT.untitledFallback;
       document.getElementById('render-subtitle').textContent = state.meta.subtitle || '';
 
       const metaParts = [];
@@ -1489,8 +1522,8 @@
 
       document.getElementById('render-footer-left').textContent = state.meta.footer || '';
       document.getElementById('render-footer-center').textContent = state.layout.staffMode === 'grand'
-        ? 'Gran pentagrama'
-        : 'Pentagrama individual';
+        ? EDITABLE_TEXT.footerLabelGrand
+        : EDITABLE_TEXT.footerLabelSingle;
       document.getElementById('render-footer-right').textContent = `Compás ${state.layout.timeNumerator}/${state.layout.timeDenominator}`;
     }
 
@@ -1502,8 +1535,8 @@
       state.meta.date = document.getElementById('date-input').value.trim();
       state.meta.footer = document.getElementById('footer-input').value.trim();
       state.meta.staffLabels = [
-        document.getElementById('staff-1-label-input').value.trim() || 'Superior',
-        document.getElementById('staff-2-label-input').value.trim() || 'Inferior'
+        document.getElementById('staff-1-label-input').value.trim() || EDITABLE_TEXT.defaultStaffLabels[0],
+        document.getElementById('staff-2-label-input').value.trim() || EDITABLE_TEXT.defaultStaffLabels[1]
       ];
       updateMetaPreview();
       if (commitHistory) saveState();
@@ -1797,12 +1830,20 @@
       });
     }
 
-    function drawStaffLabel(text, x, y) {
+    function drawStaffLabel(text, x, y, staffIndex = 0) {
       if (!text) return;
       context.save();
       context.setFillStyle('#2f3b49');
       context.setFont('Arial', 12, 'bold');
-      context.fillText(text, x + 8, y - 8);
+      if (state.layout.staffMode === 'grand') {
+        if (staffIndex === 0) {
+          context.fillText(text, x + 8, y - 8);
+        } else {
+          context.fillText(text, x + 8, y + 18);
+        }
+      } else {
+        context.fillText(text, x + 8, y - 8);
+      }
       context.restore();
     }
 
@@ -1890,7 +1931,7 @@
             topStave.addKeySignature(state.layout.keySignature);
           }
           if (measureIndex === 0) {
-            drawStaffLabel(state.meta.staffLabels[0], measureX, topY);
+            drawStaffLabel(state.meta.staffLabels[0], measureX, topY, 0);
           }
         }
         applyMeasureBarlinesToStave(topStave, measureIndex, isLastContentMeasure);
@@ -1909,7 +1950,7 @@
               bottomStave.addKeySignature(state.layout.keySignature);
             }
             if (measureIndex === 0) {
-              drawStaffLabel(state.meta.staffLabels[1], measureX, bottomY);
+              drawStaffLabel(state.meta.staffLabels[1], measureX, bottomY, 1);
             }
           }
           applyMeasureBarlinesToStave(bottomStave, measureIndex, isLastContentMeasure);
@@ -3276,6 +3317,7 @@
 
     window.addEventListener('load', () => {
       populateKeySignatureSelect();
+      applyEditableTextConfigToStaticUI();
       makeInstrument(state.audio.instrument);
       bindEvents();
 
