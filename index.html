@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Avorigen Music Studio Edu</title>
 
   <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
@@ -28,6 +28,10 @@
       box-sizing: border-box;
     }
 
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
     html,
     body {
       width: 100%;
@@ -44,7 +48,8 @@
     body {
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      min-height: 100dvh;
+      height: 100dvh;
       overflow: hidden;
     }
 
@@ -53,6 +58,10 @@
     select,
     textarea {
       font: inherit;
+    }
+
+    button {
+      touch-action: manipulation;
     }
 
     .topbar {
@@ -64,6 +73,9 @@
       color: white;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 40;
     }
 
     .brand {
@@ -104,6 +116,7 @@
       color: rgba(255, 255, 255, 0.78);
       font-size: 0.84rem;
       white-space: nowrap;
+      min-width: 0;
     }
 
     .app-shell {
@@ -111,6 +124,7 @@
       min-height: 0;
       display: grid;
       grid-template-columns: minmax(280px, 320px) minmax(0, 1fr) minmax(280px, 320px);
+      grid-template-areas: "sidebar workspace inspector";
       gap: 18px;
       padding: 18px;
     }
@@ -126,7 +140,16 @@
       padding: 18px;
     }
 
+    .sidebar {
+      grid-area: sidebar;
+    }
+
+    .inspector {
+      grid-area: inspector;
+    }
+
     .workspace-wrap {
+      grid-area: workspace;
       min-width: 0;
       min-height: 0;
       overflow: hidden;
@@ -135,6 +158,11 @@
       border-radius: 24px;
       box-shadow: var(--shadow);
       padding: 18px;
+    }
+
+    .mobile-panel-row,
+    .mobile-panel-backdrop {
+      display: none;
     }
 
     #workspace {
@@ -157,7 +185,7 @@
 
     #sheet {
       width: max-content;
-      min-width: 960px;
+      min-width: 0;
       margin: 0 auto;
       background: var(--paper);
       border-radius: 14px;
@@ -472,6 +500,9 @@
     @media (max-width: 1200px) {
       .app-shell {
         grid-template-columns: 300px minmax(0, 1fr);
+        grid-template-areas:
+          "sidebar workspace"
+          "inspector inspector";
       }
 
       .inspector {
@@ -482,28 +513,201 @@
     @media (max-width: 920px) {
       body {
         height: auto;
-        min-height: 100vh;
+        min-height: 100dvh;
         overflow: auto;
       }
 
       .topbar {
         flex-direction: column;
         align-items: stretch;
+        gap: 10px;
+        padding: calc(12px + env(safe-area-inset-top, 0px)) 12px 12px;
       }
 
       .app-shell {
         grid-template-columns: 1fr;
+        grid-template-areas: "workspace";
         padding: 12px;
+        gap: 12px;
+      }
+
+      .spacer {
+        display: none;
+      }
+
+      .brand {
+        min-width: 0;
+      }
+
+      .brand-subtitle {
+        line-height: 1.4;
+      }
+
+      .doc-strip,
+      .transport-strip {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .doc-strip .btn,
+      .transport-strip .btn,
+      .transport-strip input {
+        width: 100%;
+      }
+
+      #bpm-input {
+        width: 100% !important;
+        min-height: 44px;
+      }
+
+      .status-pill {
+        grid-column: 1 / -1;
+        text-align: center;
+      }
+
+      .mobile-panel-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 0 12px 12px;
+        position: sticky;
+        top: calc(var(--topbar-height, 0px) - 1px);
+        z-index: 39;
+        background: linear-gradient(180deg, rgba(239, 231, 210, 0.98), rgba(239, 231, 210, 0.88));
+        backdrop-filter: blur(10px);
+      }
+
+      .mobile-panel-row .btn {
+        width: 100%;
+      }
+
+      .mobile-panel-backdrop {
+        position: fixed;
+        inset: 0;
+        border: 0;
+        background: rgba(17, 24, 39, 0.34);
+        z-index: 31;
+        cursor: pointer;
+      }
+
+      body.mobile-panel-open {
+        overflow: hidden;
+      }
+
+      body.mobile-panel-open .mobile-panel-backdrop {
+        display: block;
       }
 
       .sidebar,
-      .workspace-wrap,
       .inspector {
         min-height: auto;
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        top: calc(var(--mobile-overlay-top, 148px) + env(safe-area-inset-top, 0px));
+        bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        display: none;
+        z-index: 32;
+        overflow: auto;
+        padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+      }
+
+      body.mobile-sidebar-open .sidebar {
+        display: block;
+      }
+
+      body.mobile-inspector-open .inspector {
+        display: block;
+      }
+
+      .workspace-wrap {
+        min-height: auto;
+        padding: 12px;
+        border-radius: 20px;
+      }
+
+      #workspace {
+        min-height: 58vh;
+        padding: 14px;
+        border-radius: 16px;
       }
 
       #sheet {
-        min-width: 820px;
+        width: max-content;
+        max-width: none;
+        padding: 24px 24px 22px;
+      }
+
+      .score-title {
+        font-size: 1.45rem;
+      }
+
+      .score-subtitle {
+        font-size: 0.94rem;
+      }
+
+      .score-meta,
+      .score-footer {
+        gap: 10px;
+      }
+
+      .field-grid,
+      .selection-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-section,
+      .summary-card,
+      .hint-block {
+        border-radius: 16px;
+      }
+
+      .field input,
+      .field select,
+      .field textarea,
+      .btn {
+        min-height: 44px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .topbar {
+        padding-inline: 10px;
+      }
+
+      .brand-title {
+        font-size: 0.92rem;
+      }
+
+      .brand-subtitle {
+        font-size: 0.76rem;
+      }
+
+      .app-shell {
+        padding: 10px;
+      }
+
+      .mobile-panel-row {
+        padding: 0 10px 10px;
+      }
+
+      #workspace {
+        min-height: 54vh;
+        padding: 10px;
+      }
+
+      #sheet {
+        padding: 18px 16px 18px;
+      }
+
+      #output {
+        min-height: 320px;
+      }
+
+      .score-footer {
+        flex-direction: column;
+        align-items: flex-start;
       }
     }
 
@@ -611,8 +815,15 @@
     </div>
   </header>
 
+  <div class="mobile-panel-row" aria-label="Acciones móviles">
+    <button type="button" id="btn-mobile-sidebar" class="btn dark" aria-controls="sidebar-panel" aria-expanded="false">Controles</button>
+    <button type="button" id="btn-mobile-inspector" class="btn dark" aria-controls="inspector-panel" aria-expanded="false">Edición</button>
+  </div>
+
+  <button type="button" id="mobile-panel-backdrop" class="mobile-panel-backdrop" aria-label="Cerrar panel móvil"></button>
+
   <main class="app-shell">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar-panel">
       <div class="panel-stack">
         <section class="panel-section">
           <h2 class="panel-title">Partitura</h2>
@@ -840,7 +1051,7 @@
       </div>
     </section>
 
-    <aside class="inspector">
+    <aside class="inspector" id="inspector-panel">
       <div class="panel-stack">
         <section class="summary-card">
           <h2 class="panel-title">Resumen</h2>
@@ -906,6 +1117,8 @@
     const SINGLE_SYSTEM_GAP = 190;
     const GRAND_STAFF_GAP = 92;
     const GRAND_SYSTEM_GAP = 280;
+    const MOBILE_BREAKPOINT = 920;
+    const PHONE_BREAKPOINT = 640;
 
     const durValues = { w: 4, h: 2, q: 1, 8: 0.5, 16: 0.25 };
     const durTicks = { w: 64, h: 32, q: 16, 8: 8, 16: 4 };
@@ -1010,7 +1223,10 @@
         playbackPrepared: false,
         playbackStopTimer: null,
         ghost: null,
-        playbackMarker: null
+        playbackMarker: null,
+        effectiveSheetZoom: 1,
+        sheetPixelWidth: 0,
+        sheetPixelHeight: 0
       },
       history: [],
       historyIndex: -1
@@ -1127,32 +1343,164 @@
       masterGain.volume.value = state.audio.volume;
     }
 
+    function isMobileViewport() {
+      return window.innerWidth <= MOBILE_BREAKPOINT;
+    }
+
+    function isPhoneViewport() {
+      return window.innerWidth <= PHONE_BREAKPOINT;
+    }
+
+    function getSheetHorizontalPadding() {
+      if (state.ui.printMode) return 12;
+      if (isPhoneViewport()) return 32;
+      if (isMobileViewport()) return 48;
+      return 72;
+    }
+
+    function getSheetVerticalPadding() {
+      if (state.ui.printMode) return 14;
+      if (isPhoneViewport()) return 36;
+      if (isMobileViewport()) return 46;
+      return 62;
+    }
+
+    function updateMobileLayoutMetrics() {
+      const topbar = document.querySelector('.topbar');
+      const mobilePanelRow = document.querySelector('.mobile-panel-row');
+      const topbarHeight = topbar ? Math.round(topbar.getBoundingClientRect().height) : 0;
+      const mobilePanelHeight = isMobileViewport() && mobilePanelRow
+        ? Math.round(mobilePanelRow.getBoundingClientRect().height)
+        : 0;
+
+      document.documentElement.style.setProperty('--topbar-height', `${topbarHeight}px`);
+      document.documentElement.style.setProperty('--mobile-overlay-top', `${topbarHeight + mobilePanelHeight}px`);
+    }
+
+    function getEffectiveSheetZoom(baseZoom = state.layout.sheetZoom || 1) {
+      if (state.ui.printMode) return 1;
+      if (!isMobileViewport()) return baseZoom;
+
+      const sheet = document.getElementById('sheet');
+      const workspace = document.getElementById('workspace');
+      if (!sheet || !workspace) return baseZoom;
+
+      const rawWidth = state.ui.sheetPixelWidth || sheet.offsetWidth || 1;
+      const availableWidth = Math.max(220, workspace.clientWidth - 6);
+      const fitZoom = Math.min(1, availableWidth / rawWidth);
+      return Math.min(baseZoom, fitZoom);
+    }
+
+    function applyResponsiveSheetZoom() {
+      const sheet = document.getElementById('sheet');
+      if (!sheet) return state.layout.sheetZoom || 1;
+
+      if (state.ui.printMode) {
+        sheet.style.transform = 'none';
+        sheet.style.marginRight = '0';
+        sheet.style.marginBottom = '0';
+        state.ui.effectiveSheetZoom = 1;
+        return 1;
+      }
+
+      const zoom = getEffectiveSheetZoom(state.layout.sheetZoom || 1);
+      const rawWidth = state.ui.sheetPixelWidth || sheet.offsetWidth || 0;
+      const rawHeight = state.ui.sheetPixelHeight || sheet.offsetHeight || 0;
+
+      sheet.style.transform = `scale(${zoom})`;
+      sheet.style.marginRight = zoom < 1 && rawWidth ? `-${Math.round(rawWidth * (1 - zoom))}px` : '0';
+      sheet.style.marginBottom = zoom < 1 && rawHeight ? `-${Math.round(rawHeight * (1 - zoom))}px` : '0';
+      state.ui.effectiveSheetZoom = zoom;
+      return zoom;
+    }
+
+    function syncMobilePanelButtons() {
+      const sidebarButton = document.getElementById('btn-mobile-sidebar');
+      const inspectorButton = document.getElementById('btn-mobile-inspector');
+      const sidebarOpen = document.body.classList.contains('mobile-sidebar-open');
+      const inspectorOpen = document.body.classList.contains('mobile-inspector-open');
+
+      if (sidebarButton) {
+        sidebarButton.classList.toggle('is-active', sidebarOpen);
+        sidebarButton.setAttribute('aria-expanded', String(sidebarOpen));
+      }
+
+      if (inspectorButton) {
+        inspectorButton.classList.toggle('is-active', inspectorOpen);
+        inspectorButton.setAttribute('aria-expanded', String(inspectorOpen));
+      }
+    }
+
+    function closeMobilePanels() {
+      document.body.classList.remove('mobile-sidebar-open', 'mobile-inspector-open', 'mobile-panel-open');
+      syncMobilePanelButtons();
+    }
+
+    function toggleMobilePanel(panelName) {
+      if (!isMobileViewport()) return;
+
+      const panelClass = panelName === 'sidebar' ? 'mobile-sidebar-open' : 'mobile-inspector-open';
+      const shouldOpen = !document.body.classList.contains(panelClass);
+
+      document.body.classList.remove('mobile-sidebar-open', 'mobile-inspector-open', 'mobile-panel-open');
+      if (shouldOpen) {
+        document.body.classList.add(panelClass, 'mobile-panel-open');
+      }
+
+      syncMobilePanelButtons();
+    }
+
+    function handleViewportResize() {
+      updateMobileLayoutMetrics();
+      if (!isMobileViewport()) {
+        closeMobilePanels();
+      }
+      requestDraw();
+    }
+
     function getMeasureTicks() {
       return state.layout.timeNumerator * (64 / state.layout.timeDenominator);
     }
 
     function getMeasuresPerLine() {
-      return state.ui.printMode ? 2 : MEASURES_PER_LINE;
+      if (state.ui.printMode) return 2;
+      if (isPhoneViewport()) return 1;
+      return MEASURES_PER_LINE;
     }
 
     function getMeasureWidth() {
-      return state.ui.printMode ? 330 : MEASURE_WIDTH;
+      if (state.ui.printMode) return 330;
+      if (isPhoneViewport()) return 300;
+      if (isMobileViewport()) return 330;
+      return MEASURE_WIDTH;
     }
 
     function getTopOffset() {
-      return state.ui.printMode ? 12 : TOP_Y;
+      if (state.ui.printMode) return 12;
+      if (isPhoneViewport()) return 82;
+      if (isMobileViewport()) return 90;
+      return TOP_Y;
     }
 
     function getSingleSystemGap() {
-      return state.ui.printMode ? 150 : SINGLE_SYSTEM_GAP;
+      if (state.ui.printMode) return 150;
+      if (isPhoneViewport()) return 172;
+      if (isMobileViewport()) return 182;
+      return SINGLE_SYSTEM_GAP;
     }
 
     function getGrandStaffGap() {
-      return state.ui.printMode ? 72 : GRAND_STAFF_GAP;
+      if (state.ui.printMode) return 72;
+      if (isPhoneViewport()) return 84;
+      if (isMobileViewport()) return 88;
+      return GRAND_STAFF_GAP;
     }
 
     function getGrandSystemGap() {
-      return state.ui.printMode ? 184 : GRAND_SYSTEM_GAP;
+      if (state.ui.printMode) return 184;
+      if (isPhoneViewport()) return 248;
+      if (isMobileViewport()) return 260;
+      return GRAND_SYSTEM_GAP;
     }
 
     function getMeasureBeats() {
@@ -1824,6 +2172,16 @@
       renderer.resize(width, height);
       div.style.width = `${width}px`;
       div.style.height = `${height}px`;
+
+      const sheet = document.getElementById('sheet');
+      if (sheet) {
+        state.ui.sheetPixelWidth = width + getSheetHorizontalPadding();
+        state.ui.sheetPixelHeight = height + getSheetVerticalPadding();
+        sheet.style.width = `${state.ui.sheetPixelWidth}px`;
+        sheet.style.minWidth = `${state.ui.sheetPixelWidth}px`;
+      }
+
+      applyResponsiveSheetZoom();
     }
 
     function requestDraw() {
@@ -2126,7 +2484,7 @@
 
     function getLocalPointer(event) {
       const rect = div.getBoundingClientRect();
-      const zoom = state.layout.sheetZoom || 1;
+      const zoom = state.ui.effectiveSheetZoom || state.layout.sheetZoom || 1;
       return {
         x: (event.clientX - rect.left) / zoom,
         y: (event.clientY - rect.top) / zoom
@@ -2615,10 +2973,7 @@
 
     function setSheetZoom(value, persist = true) {
       state.layout.sheetZoom = value || 1;
-      const sheet = document.getElementById('sheet');
-      sheet.style.transform = `scale(${state.layout.sheetZoom})`;
-      sheet.style.marginRight = state.layout.sheetZoom < 1 ? `-${Math.round((1 - state.layout.sheetZoom) * 880)}px` : '0';
-      sheet.style.marginBottom = state.layout.sheetZoom < 1 ? `-${Math.round((1 - state.layout.sheetZoom) * 520)}px` : '0';
+      const effectiveZoom = applyResponsiveSheetZoom();
 
       document.querySelectorAll('[data-zoom]').forEach(btn => {
         btn.classList.toggle('is-active', Number(btn.dataset.zoom) === state.layout.sheetZoom);
@@ -2626,7 +2981,7 @@
 
       if (persist) {
         saveState();
-        setStatus(`Zoom ajustado a ${Math.round(state.layout.sheetZoom * 100)}%`);
+        setStatus(`Zoom ajustado a ${Math.round(effectiveZoom * 100)}%`);
       }
     }
 
@@ -3226,6 +3581,9 @@
       document.getElementById('btn-stop').addEventListener('click', stop);
       document.getElementById('btn-metronome').addEventListener('click', toggleMetronome);
       document.getElementById('btn-final-bar').addEventListener('click', toggleFinalBar);
+      document.getElementById('btn-mobile-sidebar').addEventListener('click', () => toggleMobilePanel('sidebar'));
+      document.getElementById('btn-mobile-inspector').addEventListener('click', () => toggleMobilePanel('inspector'));
+      document.getElementById('mobile-panel-backdrop').addEventListener('click', closeMobilePanels);
       document.getElementById('btn-repeat-start').addEventListener('click', () => setRepeatMarker('start'));
       document.getElementById('btn-repeat-end').addEventListener('click', () => setRepeatMarker('end'));
       document.getElementById('btn-repeat-clear').addEventListener('click', () => setRepeatMarker('clear'));
@@ -3319,12 +3677,23 @@
       div.addEventListener('pointerleave', hideFloatingHelpers);
       div.addEventListener('pointercancel', hideFloatingHelpers);
       div.addEventListener('pointerdown', handlePointerDown);
+
+      window.addEventListener('resize', handleViewportResize, { passive: true });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', handleViewportResize, { passive: true });
+      }
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+          closeMobilePanels();
+        }
+      });
     }
 
     window.addEventListener('load', () => {
       populateKeySignatureSelect();
       applyEditableTextConfigToStaticUI();
       makeInstrument(state.audio.instrument);
+      updateMobileLayoutMetrics();
       bindEvents();
 
       const restored = restoreDraftIfPresent();
@@ -3336,6 +3705,7 @@
       updateUndoButton();
       updateMetaPreview();
       updateHarmonyPanel();
+      syncMobilePanelButtons();
       requestDraw();
     });
   </script>
