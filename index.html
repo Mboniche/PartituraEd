@@ -983,7 +983,8 @@
         pausedPlayback: false,
         playbackPrepared: false,
         playbackStopTimer: null,
-        ghost: null
+        ghost: null,
+        playbackMarker: null
       },
       history: [],
       historyIndex: -1
@@ -1805,6 +1806,15 @@
       context.restore();
     }
 
+    function drawPlaybackMeasureOverlay(measureX, staveY, measureWidth, staffIndex, measureIndex) {
+      const marker = state.ui.playbackMarker;
+      if (!marker || marker.measureIndex !== measureIndex || marker.staffIndex !== staffIndex) return;
+      context.save();
+      context.setFillStyle('rgba(181, 136, 64, 0.12)');
+      context.fillRect(measureX + 2, staveY - 8, measureWidth - 4, 64);
+      context.restore();
+    }
+
     function buildConnector(topStave, bottomStave, type) {
       try {
         new StaveConnector({
@@ -1872,13 +1882,16 @@
 
         const topMeasureNotes = fillMeasureWithRests(measuresByStaff[0][measureIndex] || [], state.layout.clefs[0]);
         const topStave = new Stave(measureX, topY, measureWidth);
+        drawPlaybackMeasureOverlay(measureX, topY, measureWidth, 0, measureIndex);
         if (isFirstInLine) {
           topStave.addClef(state.layout.clefs[0]);
           topStave.addTimeSignature(`${state.layout.timeNumerator}/${state.layout.timeDenominator}`);
           if (state.layout.keySignature) {
             topStave.addKeySignature(state.layout.keySignature);
           }
-          drawStaffLabel(state.meta.staffLabels[0], measureX, topY);
+          if (measureIndex === 0) {
+            drawStaffLabel(state.meta.staffLabels[0], measureX, topY);
+          }
         }
         applyMeasureBarlinesToStave(topStave, measureIndex, isLastContentMeasure);
         topStave.setContext(context).draw();
@@ -1888,13 +1901,16 @@
         if (state.layout.staffMode === 'grand') {
           const bottomMeasureNotes = fillMeasureWithRests(measuresByStaff[1][measureIndex] || [], state.layout.clefs[1]);
           const bottomStave = new Stave(measureX, bottomY, measureWidth);
+          drawPlaybackMeasureOverlay(measureX, bottomY, measureWidth, 1, measureIndex);
           if (isFirstInLine) {
             bottomStave.addClef(state.layout.clefs[1]);
             bottomStave.addTimeSignature(`${state.layout.timeNumerator}/${state.layout.timeDenominator}`);
             if (state.layout.keySignature) {
               bottomStave.addKeySignature(state.layout.keySignature);
             }
-            drawStaffLabel(state.meta.staffLabels[1], measureX, bottomY);
+            if (measureIndex === 0) {
+              drawStaffLabel(state.meta.staffLabels[1], measureX, bottomY);
+            }
           }
           applyMeasureBarlinesToStave(bottomStave, measureIndex, isLastContentMeasure);
           bottomStave.setContext(context).draw();
@@ -1937,6 +1953,13 @@
           state.ui.selected.noteIndex === note.originalIdx
         ) {
           vexNote.setStyle({ fillStyle: '#1f6f78', strokeStyle: '#1f6f78' });
+        }
+        if (
+          state.ui.playbackMarker &&
+          state.ui.playbackMarker.staffIndex === staffIndex &&
+          state.ui.playbackMarker.noteIndex === note.originalIdx
+        ) {
+          vexNote.setStyle({ fillStyle: '#b54d3f', strokeStyle: '#b54d3f' });
         }
 
         vexNotes.push(vexNote);
@@ -2923,7 +2946,8 @@
         eventsInMeasure.forEach(event => {
           expanded.push({
             ...event,
-            beat: sequenceIndex * measureBeats + event.beatInsideMeasure
+            beat: sequenceIndex * measureBeats + event.beatInsideMeasure,
+            measureIndex
           });
         });
       });
@@ -2971,7 +2995,8 @@
             staffIndex,
             beat: totalBeats,
             durationBeats: noteBeats,
-            pitch: getNoteKeys(note, state.layout.clefs[staffIndex]).map(key => key.replace('/', '').toUpperCase())
+            pitch: getNoteKeys(note, state.layout.clefs[staffIndex]).map(key => key.replace('/', '').toUpperCase()),
+            originalIdx: note.originalIdx
           });
         }
 
@@ -3032,6 +3057,14 @@
         const startAt = (event.beat - startBeat) * beatSeconds;
         const durSeconds = event.durationBeats * beatSeconds * 0.86;
         Tone.Transport.schedule(time => {
+          Tone.Draw.schedule(() => {
+            state.ui.playbackMarker = {
+              staffIndex: event.staffIndex,
+              noteIndex: event.originalIdx,
+              measureIndex: event.measureIndex
+            };
+            requestDraw();
+          }, time);
           try {
             synth.triggerAttackRelease(event.pitch.length === 1 ? event.pitch[0] : event.pitch, durSeconds, time);
           } catch (err) {}
@@ -3051,6 +3084,7 @@
       state.ui.scheduledPlaybackDuration = Math.max(0.2, (totalBeats - startBeat) * beatSeconds);
       state.ui.playbackPrepared = true;
       state.ui.pausedPlayback = false;
+      state.ui.playbackMarker = null;
 
       Tone.Transport.start('+0.05');
       state.ui.playbackStopTimer = setTimeout(finishPlaybackNaturally, (state.ui.scheduledPlaybackDuration + 0.4) * 1000);
@@ -3071,6 +3105,8 @@
       state.ui.playbackPrepared = false;
       state.ui.pausedPlayback = false;
       state.ui.scheduledPlaybackDuration = 0;
+      state.ui.playbackMarker = null;
+      requestDraw();
       setStatus('Reproducción finalizada');
     }
 
@@ -3100,6 +3136,8 @@
       state.ui.playbackPrepared = false;
       state.ui.pausedPlayback = false;
       state.ui.scheduledPlaybackDuration = 0;
+      state.ui.playbackMarker = null;
+      requestDraw();
       setStatus('Reproducción detenida');
     }
 
